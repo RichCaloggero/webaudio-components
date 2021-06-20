@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test</title>
+</head>
+<body> 
+<h1>Test</h1>
+<div id="status" role="status"></div>
+<audio crossorigin="anonymous" src="./t.opus" controls></audio>
+
+<script>
+class Control {
+static dataTypes = new Set([
+Number, String, Boolean,
+]);
+
+constructor (receiver = document || window || global) {
+if (!receiver) {
+alert(`Control: need a receiver`);
+return null;
+} // if
+this.receiver = receiver;
+} // constructor
+
+
+number ({
+name = "",
+label = separateWords(name),
+receiver = this.receiver,
+defaultValue = 0.0,
+min = 0.0,
+max = Number.POSITIVE_INFINITY,
+step = 1,
+controlType = "range",
+dataType = Number
+}) {
+return createControl(receiver, name, dataType,
+`<label>
+<span class="text">${label}</span>
+<input class="control"
+type="${controlType}"
+name="${name}"
+value="${dataType(defaultValue)}"
+min="${min}" max="${max}" step="${step}"
+></label>
+`);
+} // getNumber
+
+} // class Control
+
+function createControl (receiver, name, dataType, html) {
+const control = document.createElement("div");
+try {
+control.innerHTML = html;
+} catch (e) {
+throw new Error(`createControl: invalid markup - ${e}`);
+} // catch
+
+
+let handler;
+if (receiver instanceof Function) {
+alert(`receiver function: ${receiver}`);
+handler = receiver;
+} else if (receiver instanceof Object && !(receiver instanceof Array)) {
+handler = updateValue(receiver, name);
+} // if
+
+control.addEventListener("change", handler);
+return control;
+
+function updateValue (object, property) {
+return (object[property] instanceof Function)?
+e => {
+const _function = object[property];
+const value = dataType(e.target.value);
+_function.call(object, value);
+} : e => (object[property] = dataType(e.target.value));
+} // updateValue
+
+} // createControl
+
+/// test
+
+const c =  new AudioContext();
+f = c.createBiquadFilter();
+m = document.querySelector("audio");
+s = c.createMediaElementSource(m);
+s.connect(f).connect(c.destination);
+alert("audio graph created");
+
+
+const ui = new Control(f);
+alert("ui created");
+
+entries(f).forEach(entry => {
+const [key, param] = entry;
+
+if (param instanceof AudioParam) {
+alert(`audioParam: ${key}`);
+document.body.appendChild(ui.number({
+name: key,
+min: param.minValue, max: param.maxValue,
+receiver: e => param.value = Number(e.target.value)
+}) // number
+); // appendChild
+} // if
+}); // forEach
+
+function statusMessage (text) {
+document.querySelector("#status").textContent = text;
+} // statusMessage
+
+function entries (object) {
+const result = [];
+for (let k in object) result.push([k, object[k]]);
+return result;
+} // entries
+
+
+function separateWords (text) {return text;}
+
+</script>
+
+</body>
+</html>
