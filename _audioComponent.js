@@ -1,3 +1,4 @@
+
 // registry helps generate id strings
 const registry = new Map();
 function registerComponent (name) {
@@ -158,7 +159,7 @@ c.output.connect(next.input);
 console.log(`- connected ${c.name} to ${next.name}`);
 
 if (feedForward && c !== last) {
-c.wet.connect(this.wet);
+c.output.connect(this.last.input);
 console.log(`- feedForward: connected ${c.name} to ${this.name} wet`);
 } // if
 
@@ -230,6 +231,7 @@ s.connect(m, 1,0);
 m.connect(this.wet);
 } // constructor
 } // class ReverseStereo
+
 
 /// These components wrap webaudio node instances directly
 
@@ -586,3 +588,27 @@ else if (value < min) value = min;
 return value;
 } // clamp
 
+function wrapWebaudioNode (node) {
+const component = new AudioComponent(node.context, node.constructor.name);
+component.webaudioNode = node;
+component.input.connect(node).connect(component.wet);
+return component;
+} // wrapWebaudioNode
+
+function parameterNames (node, _exclude = []) {
+const excludedParameterNames = [
+"context",
+"numberOfInputs", "numberOfOutputs",
+"channelCount", "channelCountMode", "channelInterpretation",
+"addEventListener", "removeEventListener"
+];
+const names = [];
+const exclude = new Set(_exclude.concat(excludedParameterNames));
+
+for (name in node) {
+if (node[name] instanceof Function || exclude.has(name)) continue;
+names.push(name);
+} // for
+
+return names;
+} // parameterNames
