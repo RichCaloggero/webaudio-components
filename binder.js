@@ -40,8 +40,10 @@ min = 0.0,
 max = Number.POSITIVE_INFINITY,
 step = 1,
 controlType = "range",
-dataType = Number
+dataType = Number,
 }) {
+if (Math.abs(max-min) > 100) controlType = "number";
+
 return createControl(receiver, name, dataType,
 `<label>
 <span class="text">${label}</span>
@@ -65,7 +67,7 @@ control.innerHTML = html;
 throw new Error(`createControl: invalid markup - ${e}`);
 } // catch
 
-
+control.className = `${dataType.name.toLowerCase()} field`;
 createHandler(control, name);
 return control;
 

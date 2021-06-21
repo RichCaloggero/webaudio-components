@@ -14,6 +14,14 @@ let errorVerbosity = 0;
 
 export class AudioComponent {
 static sharedParameterNames = ["bypass", "silentBypass", "mix"];
+static constraints = {
+Q: {min: -20, max: 20, step: 0.02},
+frequency: {min: 20, max: 20000, step: 10},
+coneInnerAngle: {min: 0, max: 360, step: 1},
+coneOuterAngle: {min: 0, max: 360, step: 1},
+mix: {defaultValue: 1, min: -1, max: 1, step: 0.1},
+gain: {defaultValue: 1, min: -10, max: 10, step: 0.1}
+}; // constraints
 
 constructor (audio, name, parent = null) {
 //console.debug("audioComponent: instantiating ", name);
@@ -258,10 +266,15 @@ Object.defineProperty(component, name, descriptor);
 const ui = new Control(component, component.name);
 reorder([...AudioComponent.sharedParameterNames, ...webaudioParameterNames(node)]).forEach(property => {
 if (typeof(component[property]) === "number") {
-ui.container.appendChild(ui.number({
+
+ui.container.appendChild(ui.number(
+Object.assign({
 name: property,
-min: Number.NEGATIVE_INFINITY, max: Number.POSITIVE_INFINITY,
-}));
+min: -Infinity, max: Infinity,
+defaultValue: isAudioParam(node, property)? node[property].defaultValue : 0
+}, AudioComponent.constraints[property]
+) // assign
+));
 
 } else if (typeof(component[property]) === "boolean") {
 ui.container.appendChild(ui.boolean({name: property}));
@@ -273,12 +286,12 @@ return component;
 } // wrapWebaudioNode
 
 function _get (object, name) {
-return (object[name] instanceof AudioParam)?
+return isAudioParam(object, name)?
 object[name].value : object[name];
 } // _get
 
 function _set (object, name, value) {
-(object[name] instanceof AudioParam)?
+isAudioParam(object, name)?
 object[name].value  = value : object[name] = value;
 return object;
 } // _set
@@ -315,6 +328,8 @@ const ordering = new Set([
 const names = new Set(_names);
 return [...intersection(names, ordering), ...difference(names, ordering)];
 } // reorder
+
+function isAudioParam (node, property) {return node[property] instanceof AudioParam;}
 
 /// wrapped webaudio nodes
 
