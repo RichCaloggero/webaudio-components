@@ -3,24 +3,28 @@ static dataTypes = new Set([
 Number, String, Boolean,
 ]);
 
-constructor (receiver = document || window || global) {
+constructor (receiver, label = "") {
 if (!receiver) {
-alert(`Control: need a receiver`);
+alert("Control: need a receiver");
 return null;
 } // if
 this.receiver = receiver;
+this.container = document.createElement("fieldset");
+this.container.innerHTML = `
+<legend><h3>${label}</h3></legend>
+`;
 } // constructor
 
 boolean ({
-name: "",
-label: separateWords(name),
-defaultValue: false,
-dataType: Boolean,
-receiver: this.receiver
+name = "",
+label = separateWords(name),
+defaultValue = false,
+dataType = Boolean,
+receiver = this.receiver
 }) {
-element = createControl(`<button aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`);
-element.dataset.value = Boolean(defaultValue);
-Control.booleanHelper(element);
+const element = createControl(`<button aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`);
+element.dataset.value = dataType(defaultValue);
+booleanHelper(element);
 return element;
 } // boolean
 
@@ -67,7 +71,7 @@ if (receiver instanceof Function) {
 control.addEventListener("change", receiver);
 return receiver;
 } else if (receiver instanceof Array) {
-receiver.forEach(r => createHandler(control);
+receiver.forEach(r => createHandler(control));
 } else if (receiver instanceof Object) {
 const handler = updateValue(receiver, name);
 control.addEventListener("change", handler);
@@ -75,7 +79,7 @@ return handler;
 } // if
 } // createHandler
 
-function updateValue (object, property) {
+function updateValue (object, property, update) {
 return (object[property] instanceof Function?
 e => {
 const _function = object[property];
@@ -83,11 +87,11 @@ const value = dataType(e.target.value);
 _function.call(object, value);
 } : e => {
 const value = dataType(e.target.value);
-if (object[property] instanceof AudioParam) object[property].value = value;
-else object[property] = value);
+object[property] = value;
 }); // return handler
 } // updateValue
 } // createControl
+
 
 function booleanHelper (element) {
 element.addEventListener("click", e => {
@@ -98,3 +102,7 @@ e.target.dispatchEvent(new CustomEvent("change", {bubbles: true}));
 function setAriaState (value) {e.target.setAttribute("aria-pressed", value? "true" : "false");}
 }); // click handler
 } // booleanHelper
+
+function separateWords (text) {
+return text.replace(/([a-z])([A-Z])([a-z])/g, "$1 $2$3");
+} // separateWords

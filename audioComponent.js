@@ -1,9 +1,10 @@
+export let audioContext = new AudioContext();
 
 // registry helps generate id strings
 const registry = new Map();
 function registerComponent (name) {
 if (!name) return 0;
-if (registery.has(name)) registry.set(name, 0);
+if (registry.has(name)) registry.set(name, 0);
 registry.set(name, registry.get(name) + 1);
 return registry.get(name);
 } // registerComponent
@@ -11,27 +12,30 @@ return registry.get(name);
 let errorVerbosity = 0;
 
 export class AudioComponent {
+static parameterNames = ["mix", "bypass", "silentBypass"];
+
 constructor (audio, name, parent = null) {
 //console.debug("audioComponent: instantiating ", name);
 this.audio = audio;
 this.name = name;
 this.parent = parent;
-this._id = register(name);
+this._id = registerComponent(name);
 
+this._bypass = false;
 this._silentBypass = false;
 this.input = audio.createGain();
 this.output = audio.createGain();
 this.wet = audio.createGain();
 this.dry = audio.createGain();
-this._bypass = audio.createGain();
+this.__bypass = audio.createGain();
 
 this.input.connect(this.dry).connect(this.output);
-this.input.connect(this._bypass);
+this.input.connect(this.__bypass);
 
 this.wet.connect(this.output);
 
-this.mix(1.0);
-this.bypass(false);
+this.mix = 1.0;
+this.bypass = false;
 //console.debug(`component ${name} created`);
 } // constructor
 
@@ -39,37 +43,31 @@ get id () {
 return `${this.parent? this.parent.id + "." : ""}${name}-${this._id}`;
 } // get id
 
-silentBypass (value) {
-//console.debug(`silentBypass: ${value}`);
-if (value) {
-this._silentBypass = true;
-this._bypass.gain.value = 0;
-} else {
-this._silentBypass = false;
-this._bypass.gain.value = 1.0;
-} // if
+get silentBypass () {return this.__bypass.gain.value === 0;}
+set silentBypass (value) {value? this.__bypass.gain.value = 0.0 : this.__bypass.gain.value = 1.0;}
 
-return this;
-} // silentBypass
-
-mix (value) {
+get mix () {return this._mix;}
+set mix (value) {
 //console.debug(`mix: ${this.name} ${this.value} ${!this.output} ${!this.wet}`);
 this._mix = this.wet.gain.value = clamp(value);
 this.dry.gain.value = 1-Math.abs(this._mix);
 return this;
-} // mix
+} // set mix
 
-bypass (value) {
-if (!this.output) return this;
+get bypass () {return this._bypass;}
+set bypass (value) {
+if (!this.output) return;
 //console.debug(`${this.name}.bypass ${value} ${this.wet.gain.value} ${this.dry.gain.value} ${this._bypass}`);
 if (value) {
 this.dry.disconnect();
 this.wet.disconnect();
-this._bypass.connect(this.output);
+this.__bypass.connect(this.output);
+this._bypass = true;
 } else {
 this.dry.connect(this.output);
 this.wet.connect(this.output);
-this._bypass.disconnect();
+this.__bypass.disconnect();
+this._bypass = false;
 } // if
 //console.debug(`- ${this.wet.gain.value} ${this.dry.gain.value} ${this._bypass}`);
 
@@ -247,10 +245,44 @@ function wrapWebaudioNode (node) {
 const component = new AudioComponent(node.context, node.constructor.name);
 component.webaudioNode = node;
 component.input.connect(node).connect(component.wet);
+
+webaudioParameterNames(node).forEach(name => {
+const descriptor = {enumerable: true,
+get () {return _get(node, name);},
+set (value) {_set(node, name, value);}
+}; // descriptor
+Object.defineProperty(component, name, descriptor);
+}); // forEach
+
+alert(`defining ui for ${component.name}`);
+const ui = new Control(component, component.name);
+alert(`container: ${ui.container}`);
+webaudioParameterNames(node).concat(AudioComponent.parameterNames).forEach(property => {
+if (typeof(component[property]) === "number") {
+ui.container.appendChild(ui.number({name: property}));
+
+} else if (typeof(component[property]) === "boolean") {
+ui.container.appendChild(ui.boolean({name: property}));
+} // if
+}); // forEach
+
+document.body.appendChild(ui.container);
 return component;
 } // wrapWebaudioNode
 
-function parameterNames (node, _exclude = []) {
+function _get (object, name) {
+return (object[name] instanceof AudioParam)?
+object[name].value : object[name];
+} // _get
+
+function _set (object, name, value) {
+(object[name] instanceof AudioParam)?
+object[name].value  = value : object[name] = value;
+return object;
+} // _set
+
+
+function webaudioParameterNames (node, _exclude = []) {
 const excludedParameterNames = [
 "context",
 "numberOfInputs", "numberOfOutputs",
@@ -266,4 +298,11 @@ names.push(name);
 } // for
 
 return names;
-} // parameterNames
+} // webaudioParameterNames
+
+
+/// wrapped webaudio nodes
+
+export function filter (options) {
+return wrapWebaudioNode(audioContext.createBiquadFilter());
+} // filter
