@@ -1,3 +1,4 @@
+import {intersection, difference} from "./setops.js";
 export let audioContext = new AudioContext();
 
 // registry helps generate id strings
@@ -12,7 +13,7 @@ return registry.get(name);
 let errorVerbosity = 0;
 
 export class AudioComponent {
-static parameterNames = ["mix", "bypass", "silentBypass"];
+static sharedParameterNames = ["bypass", "silentBypass", "mix"];
 
 constructor (audio, name, parent = null) {
 //console.debug("audioComponent: instantiating ", name);
@@ -254,12 +255,13 @@ set (value) {_set(node, name, value);}
 Object.defineProperty(component, name, descriptor);
 }); // forEach
 
-alert(`defining ui for ${component.name}`);
 const ui = new Control(component, component.name);
-alert(`container: ${ui.container}`);
-webaudioParameterNames(node).concat(AudioComponent.parameterNames).forEach(property => {
+reorder([...AudioComponent.sharedParameterNames, ...webaudioParameterNames(node)]).forEach(property => {
 if (typeof(component[property]) === "number") {
-ui.container.appendChild(ui.number({name: property}));
+ui.container.appendChild(ui.number({
+name: property,
+min: Number.NEGATIVE_INFINITY, max: Number.POSITIVE_INFINITY,
+}));
 
 } else if (typeof(component[property]) === "boolean") {
 ui.container.appendChild(ui.boolean({name: property}));
@@ -300,6 +302,19 @@ names.push(name);
 return names;
 } // webaudioParameterNames
 
+function reorder (_names) {
+const ordering = new Set([
+...AudioComponent.sharedParameterNames,
+"type", "frequency", "Q",
+"positionX", "positionY", "positionZ",
+"orientationX", "orientationY", "orientationZ",
+"gain",
+"delayTime"
+]); // ordering
+
+const names = new Set(_names);
+return [...intersection(names, ordering), ...difference(names, ordering)];
+} // reorder
 
 /// wrapped webaudio nodes
 

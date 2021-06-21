@@ -22,7 +22,10 @@ defaultValue = false,
 dataType = Boolean,
 receiver = this.receiver
 }) {
-const element = createControl(`<button aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`);
+const element = createControl(
+receiver, name, dataType,
+`<button aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
+);
 element.dataset.value = dataType(defaultValue);
 booleanHelper(element);
 return element;
