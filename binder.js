@@ -15,6 +15,22 @@ this.container.innerHTML = `
 `;
 } // constructor
 
+string ({
+name = "",
+label = separateWords(name),
+defaultValue = "",
+dataType = String,
+receiver = this.receiver
+}) {
+return createControl(receiver, name, dataType, 
+`<label>
+<span class="text">${label}</span>
+<input type="text" value="${defaultValue}">
+</label>
+`);
+} // string
+
+
 boolean ({
 name = "",
 label = separateWords(name),
@@ -67,20 +83,17 @@ control.innerHTML = html;
 throw new Error(`createControl: invalid markup - ${e}`);
 } // catch
 
-control.className = `${dataType.name.toLowerCase()} field`;
-createHandler(control, name);
+control.className = `${dataType.name.toLowerCase()} ${name}`;
+control.addEventListener("change", createHandler(control, name, receiver));
 return control;
 
-function createHandler (control, name) {
+function createHandler (control, name, receiver) {
 if (receiver instanceof Function) {
-control.addEventListener("change", receiver);
 return receiver;
 } else if (receiver instanceof Array) {
-receiver.forEach(r => createHandler(control));
+receiver.forEach(r => createHandler(control, name, r));
 } else if (receiver instanceof Object) {
-const handler = updateValue(receiver, name);
-control.addEventListener("change", handler);
-return handler;
+return updateValue(receiver, name);
 } // if
 } // createHandler
 
@@ -88,10 +101,10 @@ function updateValue (object, property, update) {
 return (object[property] instanceof Function?
 e => {
 const _function = object[property];
-const value = dataType(e.target.value);
+const value = dataType(getValue(e.target));
 _function.call(object, value);
 } : e => {
-const value = dataType(e.target.value);
+const value = dataType(getValue(e.target));
 object[property] = value;
 }); // return handler
 } // updateValue
@@ -100,8 +113,7 @@ object[property] = value;
 
 function booleanHelper (element) {
 element.addEventListener("click", e => {
-e.target.dataset.value = !e.target.dataset.value;
-setAriaState(e.target.dataset.value);
+setAriaState(!getState(e.target));
 e.target.dispatchEvent(new CustomEvent("change", {bubbles: true}));
 
 function setAriaState (value) {e.target.setAttribute("aria-pressed", value? "true" : "false");}
@@ -111,3 +123,13 @@ function setAriaState (value) {e.target.setAttribute("aria-pressed", value? "tru
 function separateWords (text) {
 return text.replace(/([a-z])([A-Z])([a-z])/g, "$1 $2$3");
 } // separateWords
+
+function getState (button) {
+return button.hasAttribute("aria-pressed")?
+button.getAttribute("aria-pressed") === "true"
+: false;
+} // getState
+
+function getValue (element) {
+return element instanceof HTMLButtonElement? getState(element) : element.value;
+} // getValue

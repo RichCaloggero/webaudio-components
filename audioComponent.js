@@ -84,9 +84,9 @@ return this;
 } // bypass
 
 connect (component) {
-if (component instanceof AudioComponent) this.output.connect(component.input);
-else if (component instanceof AudioNode) this.output.connect(component);
-else alert(`${this}: cannot connect to ${component}`);
+if (component instanceof AudioComponent && this.output && component.input) this.output.connect(component.input);
+else if (component instanceof AudioNode && this.output) this.output.connect(component);
+else this._error(`${this}: cannot connect to ${component}`);
 
 return component;
 } // connect
@@ -142,13 +142,17 @@ console.log(`- channel 2: ${channel2.name} connected`);
 } // class Split
 
 export class Series extends AudioComponent {
-constructor (audio, components, feedBack = false, feedForward = false) {
+constructor (audio, components) {
 super (audio, "series");
-//console.debug(`Series: connecting ${components.length} components in series:`);
 if (components.length < 2) this._error("need two or more components");
 
 const first = components[0];
 const last = components[components.length-1];
+this._feedForward = audio.createGain();
+this._delay = audio.createDelay();
+this._feedBack= audio.createGain();
+this._delay.delayTime.value = 0;
+this._feedForward.gain.value = this._feedBack.gain.value = 0;
 
 if(first.input) {
 this.input.connect(first.input);
@@ -165,39 +169,39 @@ if (c.output && next.input) {
 c.output.connect(next.input);
 console.log(`- connected ${c.name} to ${next.name}`);
 
-if (feedForward && c !== last) {
-c.output.connect(this.last.input);
-console.log(`- feedForward: connected ${c.name} to ${this.name} wet`);
+if (c !== last) {
+//c.output.connect(this._feedForward).connect(last.input);
+//console.log(`- feedForward: connected ${c.name} to ${this.name} last`);
 } // if
 
 } else {
-this._error(`${c.name} and ${next.name} must both be AudioComponents`);
+//this._error(`${c.name} and ${next.name} must both be AudioComponents`);
 } // if
 } // if
 }); // forEach
 } // if
 
 if (last.output) {
-last.output.connect(this.wet);
+last.connect(this.wet);
 console.log(`- connected ${last.name} to ${this.name} wet`);
-} // if
 
-if (feedBack) {
-this._delay = audio.createDelay();
-this._feedback= audio.createGain();
-this._delay.delayTime.value = 0;
-this._feedback.gain.value = 0.5;
-last.connect(this._feedback).connect(this._delay).connect(first);
+last.connect(this._feedBack).connect(this._delay).connect(first);
 console.log(`- feedBack ${this.name}: connected ${last.name} to ${first.name}`);
 } // if
+
 
 this.first = first;
 this.last = last;
 this.components = components;
 } // constructor
 
-set feedback(value) {if (this._feedback) this._feedback.gain.value = clamp(value, -0.998, 0.998);}
-set delay (value) {if (this._delay) this._delay.delayTime.value = value;}
+get feedForward () {return this._feedForward.gain.value;}
+get feedBack () {return this._feedBack.gain.value;}
+get delay () {return this._delay.delayTime.value;}
+
+set feedForward (value) {this._feedForward.gain.value = clamp(value, -1, 1);}
+set feedBack(value) {this._feedBack.gain.value = clamp(value, -0.998, 0.998);}
+set delay (value) {this._delay.delayTime.value = value;}
 } // class Series
 
 export class Parallel extends AudioComponent {
@@ -255,6 +259,7 @@ const component = new AudioComponent(node.context, node.constructor.name);
 component.webaudioNode = node;
 component.input.connect(node).connect(component.wet);
 
+// create getters and setters on component which talk to the webaudio node inside
 webaudioParameterNames(node).forEach(name => {
 const descriptor = {enumerable: true,
 get () {return _get(node, name);},
@@ -278,9 +283,13 @@ defaultValue: isAudioParam(node, property)? node[property].defaultValue : 0
 
 } else if (typeof(component[property]) === "boolean") {
 ui.container.appendChild(ui.boolean({name: property}));
+
+} else if (typeof(component[property]) === "string") {
+ui.container.appendChild(ui.string({name: property}));
 } // if
 }); // forEach
 
+component.ui = ui;
 document.body.appendChild(ui.container);
 return component;
 } // wrapWebaudioNode
@@ -336,3 +345,40 @@ function isAudioParam (node, property) {return node[property] instanceof AudioPa
 export function filter (options) {
 return wrapWebaudioNode(audioContext.createBiquadFilter());
 } // filter
+
+/// connectors
+
+export function series (...components) {
+const component = new Series (audioContext, components);
+const ui = new Control(component);
+
+ui.container.appendChild(ui.boolean({name: "bypass"}));
+ui.container.appendChild(ui.boolean({name: "silentBypass"}));
+
+ui.container.appendChild(ui.number({name: "mix", min: -1, max: 1, step: 0.1}));
+ui.container.appendChild(ui.number({name: "feedBack", min: -1, max: 1, step: 0.1}));
+ui.container.appendChild(ui.number({name: "delay", min: 0, max: 1, step: 0.00001}));
+ui.container.appendChild(ui.number({name: "feedForward", min: -1, max: 1, step: 0.1}));
+
+component.ui = ui;
+return component;
+} // series
+
+export function parallel (options, ...components) {
+const component = new Parallel(audioContext, components, options.feedBack,  options.delay, options.feedForward);
+const ui = Control(component);
+
+ui.container.appendChild(ui.boolean({name: "bypass"}));
+ui.container.appendChild(ui.boolean({name: "silentBypass"}));
+ui.container.appendChild(ui.number({name: "mix", min: -1, max: 1, step: 0.1}));
+
+component.ui = ui;
+return component;
+} // parallel
+
+export function app (options, component) {
+const ui = new Control(component, options.title || "Webaudio App");
+debugger;
+ui.container.appendChild(component.ui.container);
+return ui;
+} // app
