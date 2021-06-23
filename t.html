@@ -26,6 +26,7 @@ const source = c.createMediaElementSource(media);
 
 const root = audio.series(
 audio.player(media),
+audio.parallel(audio.filter(), audio.filter()),
 audio.filter(),
 audio.destination()
 );

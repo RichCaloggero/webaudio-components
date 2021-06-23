@@ -9,9 +9,12 @@ alert("Control: need a receiver");
 return null;
 } // if
 this.receiver = receiver;
-this.container = document.createElement("fieldset");
+this.label = label;
+this.container = document.createElement("div");
+//this.container.setAttribute("role", "main");
+//this.container.setAttribute("aria-roledescription", "component");
 this.container.innerHTML = `
-<legend><h3>${label}</h3></legend>
+<span class="component-title" role="heading">${label}</span>
 `;
 this.container.className = `component ${label}`;
 } // constructor
