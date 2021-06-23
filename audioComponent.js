@@ -254,7 +254,7 @@ return value;
 } // clamp
 
 
-function wrapWebaudioNode (node) {
+export function wrapWebaudioNode (node) {
 const component = new AudioComponent(node.context, node.constructor.name);
 component.webaudioNode = node;
 component.input.connect(node).connect(component.wet);
@@ -339,46 +339,3 @@ return [...intersection(names, ordering), ...difference(names, ordering)];
 } // reorder
 
 function isAudioParam (node, property) {return node[property] instanceof AudioParam;}
-
-/// wrapped webaudio nodes
-
-export function filter (options) {
-return wrapWebaudioNode(audioContext.createBiquadFilter());
-} // filter
-
-/// connectors
-
-export function series (...components) {
-const component = new Series (audioContext, components);
-const ui = new Control(component);
-
-ui.container.appendChild(ui.boolean({name: "bypass"}));
-ui.container.appendChild(ui.boolean({name: "silentBypass"}));
-
-ui.container.appendChild(ui.number({name: "mix", min: -1, max: 1, step: 0.1}));
-ui.container.appendChild(ui.number({name: "feedBack", min: -1, max: 1, step: 0.1}));
-ui.container.appendChild(ui.number({name: "delay", min: 0, max: 1, step: 0.00001}));
-ui.container.appendChild(ui.number({name: "feedForward", min: -1, max: 1, step: 0.1}));
-
-component.ui = ui;
-return component;
-} // series
-
-export function parallel (options, ...components) {
-const component = new Parallel(audioContext, components, options.feedBack,  options.delay, options.feedForward);
-const ui = Control(component);
-
-ui.container.appendChild(ui.boolean({name: "bypass"}));
-ui.container.appendChild(ui.boolean({name: "silentBypass"}));
-ui.container.appendChild(ui.number({name: "mix", min: -1, max: 1, step: 0.1}));
-
-component.ui = ui;
-return component;
-} // parallel
-
-export function app (options, component) {
-const ui = new Control(component, options.title || "Webaudio App");
-debugger;
-ui.container.appendChild(component.ui.container);
-return ui;
-} // app

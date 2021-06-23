@@ -9,12 +9,16 @@
 <div id="status" role="status"></div>
 <audio crossorigin="anonymous" src="./t.opus" controls></audio>
 
-<script type="module" src="setops.js"></script>
 <script src="binder.js"></script>
+<!--<script type="module" src="setops.js"></script>
 <script type="module" src="audioComponent.js"></script>
+<script type="module" src="components.js"></script>
+-->
 
 <script type="module">
-import {AudioComponent, filter, series, app, audioContext} from "./audioComponent.js";
+import {AudioComponent, audioContext} from "./audioComponent.js";
+import {filter, series, app} from "./components.js";
+
 import * as setop from "./setops.js";
 
 const c = audioContext;
