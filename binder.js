@@ -13,6 +13,7 @@ this.container = document.createElement("fieldset");
 this.container.innerHTML = `
 <legend><h3>${label}</h3></legend>
 `;
+this.container.className = `component ${label}`;
 } // constructor
 
 string ({

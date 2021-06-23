@@ -17,30 +17,20 @@
 
 <script type="module">
 import {AudioComponent, audioContext} from "./audioComponent.js";
-import {filter, series, app} from "./components.js";
-
+import * as audio from "./components.js";
 import * as setop from "./setops.js";
 
 const c = audioContext;
 const media = document.querySelector("audio");
 const source = c.createMediaElementSource(media);
-const player = new AudioComponent(audioContext, "Audio Player");
-player.webaudioNode = source;
-player.input = null;
-source.connect(player.output);
 
-const speakers = new AudioComponent(audioContext, "Speakers");
-speakers.webaudioNode = audioContext.destination;
-speakers.input.connect(audioContext.destination);
-speakers.output = null;
-
-const root = series({},
-player,
-filter(),
-speakers
+const root = audio.series(
+audio.player(media),
+audio.filter(),
+audio.destination()
 );
 
-document.body.appendChild(app({}, root).container);
+document.body.appendChild(audio.app({}, root));
 </script>
 
 </body>

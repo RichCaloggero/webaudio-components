@@ -107,6 +107,15 @@ console.error(message);
 
 } // class AudioComponent
 
+export class Destination extends AudioComponent {
+constructor (audio) {
+super (audio, "destination");
+this.output = null;
+this.webaudioNode = audio.destination;
+this.input.connect(this.webaudioNode);
+}; // constructor
+} // class Destination
+
 export class Split extends AudioComponent {
 constructor (audio, components, swapInputs, swapOutputs) {
 super (audio, "split");
@@ -114,7 +123,7 @@ if (components.length === 0 || components.length > 2) this._error("must have at 
 
 this.splitter = this.audio.createChannelSplitter(2);
 this.merger = this.audio.createChannelMerger(2);
-this.components = components;
+this.children = this.components = components;
 
 
 this.input.connect(this.splitter);
@@ -192,7 +201,7 @@ console.log(`- feedBack ${this.name}: connected ${last.name} to ${first.name}`);
 
 this.first = first;
 this.last = last;
-this.components = components;
+this.children = this.components = components;
 } // constructor
 
 get feedForward () {return this._feedForward.gain.value;}
@@ -225,7 +234,7 @@ console.log(`- connecting ${c.name} to ${this.name}.wet`);
 
 this._gain.gain.value = 1 / components.length;
 this._gain.connect(this.wet);
-this.components = components;
+this.children = this.components = components;
 } // constructor
 
 get outputGain () {return this._gain.gain.value;}
@@ -256,8 +265,16 @@ return value;
 
 export function wrapWebaudioNode (node) {
 const component = new AudioComponent(node.context, node.constructor.name);
+component.type = "webaudioNode";
 component.webaudioNode = node;
-component.input.connect(node).connect(component.wet);
+
+if (node.numberOfInputs > 0) component.input.connect(node);
+else component.input = null;
+
+if (node.numberOfOutputs > 0) node.connect(component.wet);
+else component.output = null;
+
+if (!component.input && !component.output) component._error("no connections possible; both input and output are null");
 
 // create getters and setters on component which talk to the webaudio node inside
 webaudioParameterNames(node).forEach(name => {
@@ -290,7 +307,6 @@ ui.container.appendChild(ui.string({name: property}));
 }); // forEach
 
 component.ui = ui;
-document.body.appendChild(ui.container);
 return component;
 } // wrapWebaudioNode
 
