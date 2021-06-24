@@ -5,6 +5,9 @@ import {eventToKey} from "./key.js";
 
 export function app (options, component) {
 const ui = new Control({}, "App");
+ui.container.insertAdjacentHTML("afterBegin", '<div role="status" aria-atomic="true" aria-label="status" class="status"></div>\n');
+ui.container.classList.add("root");
+
 setDepth(ui.container, 1);
 buildDom(component, ui.container);
 
@@ -116,7 +119,10 @@ execute(commands[key], element, Number(element.value));
 
 function execute (command, element, value) {
 if (commands[key]) commands[key](element, Number(element.value));
-if (element.validationMessage) element.value = Number(value);
+if (element.validationMessage) {
+statusMessage(element.validationMessage);
+element.value = Number(value);
+} // if
 } // execute
 
 function negate (input, value) {input.value = -1*value;}
@@ -132,3 +138,10 @@ function decrease50 (input, value) {input.value = value - 50*Number(input.step);
 
  } // numericFieldKeyboardHandler
 
+function split (s) {
+return s.split(/,+\s*|,*\s+/).filter(x => x.length>0);
+} // split
+
+function statusMessage (text) {
+document.querySelector(".root .status, #status").textContent = text;
+} // statusMessage

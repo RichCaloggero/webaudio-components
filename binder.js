@@ -13,10 +13,10 @@ this.label = label;
 this.container = document.createElement("div");
 //this.container.setAttribute("role", "main");
 //this.container.setAttribute("aria-roledescription", "component");
-this.container.innerHTML = `
-<span class="component-title" role="heading">${label}</span>
-`;
 this.container.className = `component ${label}`;
+this.container.innerHTML = `
+<div class="component-title" role="heading">${label}</div>
+`;
 } // constructor
 
 string ({
