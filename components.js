@@ -138,9 +138,6 @@ function decrease50 (input, value) {input.value = value - 50*Number(input.step);
 
  } // numericFieldKeyboardHandler
 
-function split (s) {
-return s.split(/,+\s*|,*\s+/).filter(x => x.length>0);
-} // split
 
 function statusMessage (text) {
 document.querySelector(".root .status, #status").textContent = text;
