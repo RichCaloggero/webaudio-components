@@ -1,5 +1,6 @@
-import {audioContext, wrapWebaudioNode, Destination, Series, Parallel} from "./audioComponent.js";
+import {audioContext, AudioComponent, wrapWebaudioNode, Destination, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
+import {parseFieldDescriptor} from "./parser.js";
 
 /// root (top level UI)
 
@@ -18,11 +19,11 @@ return ui.container;
 
 /// wrapped webaudio nodes
 
-export function player (source) {
+export function player (source, options) {
 const sourceNode = source instanceof HTMLMediaElement?
 audioContext.createMediaElementSource(source)
 : createBufferSource(source);
-return wrapWebaudioNode(sourceNode);
+return applyFieldDescriptor(options, wrapWebaudioNode(sourceNode));
 } // player
 
 export function destination () {
@@ -33,21 +34,23 @@ return component;
 } // destination
 
 export function gain (options) {
-return wrapWebaudioNode(audioContext.createGain());
+return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createGain()));
 } // gain
 
 export function filter (options) {
-return wrapWebaudioNode(audioContext.createBiquadFilter());
+return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createBiquadFilter()));
 } // filter
 
 export function delay(options) {
-return wrapWebaudioNode(audioContext.createDelay());
+return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createDelay()));
 } // delay
 
 
 /// containers
 
 export function series (...children) {
+const options = children[0] instanceof AudioComponent?
+"" : shift(children);
 const component = new Series (audioContext, children);
 component.type = "container";
 const ui = new Control(component, "series");
@@ -60,10 +63,12 @@ ui.container.appendChild(ui.number({name: "feedBack", min: -1, max: 1, step: 0.1
 ui.container.appendChild(ui.number({name: "delay", min: 0, max: 1, step: 0.00001}));
 
 component.ui = ui;
-return component;
+return applyFieldDescriptor(options, component);
 } // series
 
 export function parallel (...children) {
+const options = children[0] instanceof AudioComponent?
+"" : shift(children);
 const component = new Parallel(audioContext, children);
 component.type = "container";
 const ui = new Control(component, "parallel");
@@ -73,10 +78,20 @@ ui.container.appendChild(ui.boolean({name: "silentBypass"}));
 ui.container.appendChild(ui.number({name: "mix", min: -1, max: 1, step: 0.1}));
 
 component.ui = ui;
-return component;
+return applyFieldDescriptor(options, component);
 } // parallel
 
 /// helpers
+
+function applyFieldDescriptor (fd, component) {
+if (!fd) fd = "";
+const container = component.ui.container;
+const descriptors = typeof(fd) === "string" || (fd instanceof String)?
+parseFieldDescriptor(fd) : fd;
+console.debug("applying descriptors: ", descriptors, " to ", container);
+
+return component;
+} // applyFieldDescriptor
 
 function createBufferSource (buffer) {
 const source = audioContext.createBufferSource();
