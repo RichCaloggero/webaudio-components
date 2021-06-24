@@ -285,26 +285,9 @@ set (value) {_set(node, name, value);}
 Object.defineProperty(component, name, descriptor);
 }); // forEach
 
+// create UI
 const ui = new Control(component, component.name);
-reorder([...AudioComponent.sharedParameterNames, ...webaudioParameterNames(node)]).forEach(property => {
-if (typeof(component[property]) === "number") {
-
-ui.container.appendChild(ui.number(
-Object.assign({
-name: property,
-min: -Infinity, max: Infinity,
-defaultValue: isAudioParam(node, property)? node[property].defaultValue : 0
-}, AudioComponent.constraints[property]
-) // assign
-));
-
-} else if (typeof(component[property]) === "boolean") {
-ui.container.appendChild(ui.boolean({name: property}));
-
-} else if (typeof(component[property]) === "string") {
-ui.container.appendChild(ui.string({name: property}));
-} // if
-}); // forEach
+createFields(component, node, ui, reorder([...AudioComponent.sharedParameterNames, ...webaudioParameterNames(node)]));
 
 component.ui = ui;
 return component;
@@ -355,3 +338,25 @@ return [...intersection(names, ordering), ...difference(names, ordering)];
 } // reorder
 
 function isAudioParam (node, property) {return node[property] instanceof AudioParam;}
+
+export function createFields (component, node, ui, propertyNames) {
+propertyNames.forEach(property => {
+if (typeof(component[property]) === "number") {
+
+ui.container.appendChild(ui.number(
+Object.assign({
+name: property,
+min: -Infinity, max: Infinity,
+defaultValue: isAudioParam(node, property)? node[property].defaultValue : 0
+}, AudioComponent.constraints[property]
+) // assign
+));
+
+} else if (typeof(component[property]) === "boolean") {
+ui.container.appendChild(ui.boolean({name: property}));
+
+} else if (typeof(component[property]) === "string") {
+ui.container.appendChild(ui.string({name: property}));
+} // if
+}); // forEach
+} // createFields

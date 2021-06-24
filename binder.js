@@ -62,7 +62,7 @@ step = 1,
 controlType = "range",
 dataType = Number,
 }) {
-if (Math.abs(max-min) > 100) controlType = "number";
+if (Math.abs((max-min) / step) > 100) controlType = "number";
 
 return createControl(receiver, name, dataType,
 `<label>
@@ -104,12 +104,15 @@ return updateValue(receiver, name);
 function updateValue (object, property, update) {
 return (object[property] instanceof Function?
 e => {
+const value = getValue(e.target);
+if (nullish(value)) return;
+
 const _function = object[property];
-const value = dataType(getValue(e.target));
-_function.call(object, value);
+_function.call(object, dataType(value));
 } : e => {
-const value = dataType(getValue(e.target));
-object[property] = value;
+const value = getValue(e.target);
+if (nullish(value)) return;
+object[property] = dataType(value);
 }); // return handler
 } // updateValue
 } // createControl
@@ -137,3 +140,5 @@ button.getAttribute("aria-pressed") === "true"
 function getValue (element) {
 return element instanceof HTMLButtonElement? getState(element) : element.value;
 } // getValue
+
+function nullish (value) {return value === null || value === undefined || value === "";}
