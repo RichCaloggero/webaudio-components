@@ -15,7 +15,7 @@ let errorVerbosity = 0;
 export class AudioComponent {
 static sharedParameterNames = ["bypass", "silentBypass", "mix"];
 static constraints = {
-Q: {min: -20, max: 20, step: 0.02},
+Q: {min: -20, max: 20, defaultValue: 1, step: 0.02},
 frequency: {min: 20, max: 20000, step: 10},
 coneInnerAngle: {min: 0, max: 360, step: 1},
 coneOuterAngle: {min: 0, max: 360, step: 1},

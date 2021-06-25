@@ -13,6 +13,7 @@ setDepth(ui.container, 1);
 buildDom(component, ui.container);
 
 ui.container.addEventListener ("keydown", numericFieldKeyboardHandler);
+setTimeout(() => statusMessage("Ready."), 1);
 return ui.container;
 } // app
 
@@ -90,6 +91,20 @@ const descriptors = typeof(fd) === "string" || (fd instanceof String)?
 parseFieldDescriptor(fd) : fd;
 console.debug("applying descriptors: ", descriptors, " to ", container);
 
+descriptors.forEach(d => {
+const {name, defaultValue, automation} = d;
+const element = container.querySelector(`input[data-name=${name}`);
+
+if (element) {
+if (defaultValue.length > 0) element.value = defaultValue;
+element.dataset.automation = automation;
+element.closest(".field").hidden = false;
+} else {
+statusMessage(`field ${name} not found in ${container.className}`, "append");
+} // if
+}); // forEach
+
+
 return component;
 } // applyFieldDescriptor
 
@@ -102,7 +117,7 @@ return source;
 function buildDom(root, dom, depth = 1) {
 const container = root.ui.container;
 container.insertAdjacentHTML("afterBegin", '<hr role="presentation">');
-container.insertAdjacentHTML("beforeEnd", `<hr aria-roledescription="end ${root.ui.label}">`);
+container.insertAdjacentHTML("beforeEnd", `<hr hidden class="end-marker" aria-roledescription="end ${root.ui.label}">`);
 dom.appendChild(container);
 if (root.children) depth += 1;
 setDepth(container, depth);
@@ -154,6 +169,13 @@ function decrease50 (input, value) {input.value = value - 50*Number(input.step);
  } // numericFieldKeyboardHandler
 
 
-function statusMessage (text) {
-document.querySelector(".root .status, #status").textContent = text;
+function statusMessage (text, append) {
+const status = document.querySelector(".root .status, #status");
+if (append) {
+status.setAttribute("aria-atomic", "false");
+status.insertAdjacentHTML("beforeEnd", `<p class="message">${text}</p>\n`);
+} else {
+status.setAttribute("aria-atomic", "true");
+status.textContent = text;
+} // if
 } // statusMessage

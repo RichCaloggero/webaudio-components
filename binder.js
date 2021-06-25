@@ -29,7 +29,7 @@ receiver = this.receiver
 return createControl(receiver, name, dataType, 
 `<label>
 <span class="text">${label}</span>
-<input type="text" value="${defaultValue}">
+<input type="text" value="${defaultValue}" data-name="${name}">
 </label>
 `);
 } // string
@@ -44,7 +44,7 @@ receiver = this.receiver
 }) {
 const element = createControl(
 receiver, name, dataType,
-`<button aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
+`<button data-name="${name}" aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
 );
 element.dataset.value = dataType(defaultValue);
 booleanHelper(element);
@@ -69,7 +69,7 @@ return createControl(receiver, name, dataType,
 <span class="text">${label}</span>
 <input class="control"
 type="${controlType}"
-name="${name}"
+data-name="${name}"
 value="${dataType(defaultValue)}"
 min="${min}" max="${max}" step="${step}"
 ></label>
@@ -82,12 +82,13 @@ min="${min}" max="${max}" step="${step}"
 function createControl (receiver, name, dataType, html) {
 const control = document.createElement("div");
 try {
-control.innerHTML = html;
+control.insertAdjacentHTML("afterBegin", html);
 } catch (e) {
 throw new Error(`createControl: invalid markup - ${e}`);
 } // catch
 
-control.className = `${dataType.name.toLowerCase()} ${name}`;
+control.hidden = true;
+control.className = `${dataType.name.toLowerCase()} field ${name}`;
 control.addEventListener("change", createHandler(control, name, receiver));
 return control;
 

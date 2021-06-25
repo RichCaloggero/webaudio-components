@@ -1,4 +1,5 @@
 export function parseFieldDescriptor (s) {
+if (! s) return [];
 return splitOnSemi(s).map(d => createDescriptor(d));
 } // parser
 
