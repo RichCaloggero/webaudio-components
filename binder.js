@@ -1,7 +1,14 @@
-class Control {
+export class Control {
 static dataTypes = new Set([
 Number, String, Boolean,
 ]);
+
+static dataTypeMap = new Map([
+["String", String],
+["Boolean", Boolean],
+["Number", Number]
+]);
+
 
 constructor (receiver, label = "") {
 if (!receiver) {
@@ -17,6 +24,8 @@ this.container.className = `component ${label}`;
 this.container.innerHTML = `
 <div class="component-title" role="heading">${label}</div>
 `;
+
+this.container.addEventListener("change", createUpdateHandler(this));
 } // constructor
 
 string ({
@@ -26,7 +35,7 @@ defaultValue = "",
 dataType = String,
 receiver = this.receiver
 }) {
-return createControl(receiver, name, dataType, 
+return createControl(receiver, name, dataType, defaultValue,
 `<label>
 <span class="text">${label}</span>
 <input type="text" value="${defaultValue}" data-name="${name}">
@@ -43,7 +52,7 @@ dataType = Boolean,
 receiver = this.receiver
 }) {
 const element = createControl(
-receiver, name, dataType,
+receiver, name, dataType, defaultValue,
 `<button data-name="${name}" aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
 );
 element.dataset.value = dataType(defaultValue);
@@ -64,7 +73,7 @@ dataType = Number,
 }) {
 if (Math.abs((max-min) / step) > 100) controlType = "number";
 
-return createControl(receiver, name, dataType,
+return createControl(receiver, name, dataType, defaultValue,
 `<label>
 <span class="text">${label}</span>
 <input class="control"
@@ -79,7 +88,7 @@ min="${min}" max="${max}" step="${step}"
 
 } // class Control
 
-function createControl (receiver, name, dataType, html) {
+function createControl (receiver, name, dataType, defaultValue, html) {
 const control = document.createElement("div");
 try {
 control.insertAdjacentHTML("afterBegin", html);
@@ -89,35 +98,44 @@ throw new Error(`createControl: invalid markup - ${e}`);
 
 control.hidden = true;
 control.className = `${dataType.name.toLowerCase()} field ${name}`;
-control.addEventListener("change", createHandler(control, name, receiver));
+control.dataset.dataType = dataType.name;
+
 return control;
-
-function createHandler (control, name, receiver) {
-if (receiver instanceof Function) {
-return receiver;
-} else if (receiver instanceof Array) {
-receiver.forEach(r => createHandler(control, name, r));
-} else if (receiver instanceof Object) {
-return updateValue(receiver, name);
-} // if
-} // createHandler
-
-function updateValue (object, property, update) {
-return (object[property] instanceof Function?
-e => {
-const value = getValue(e.target);
-if (nullish(value)) return;
-
-const _function = object[property];
-_function.call(object, dataType(value));
-} : e => {
-const value = getValue(e.target);
-if (nullish(value)) return;
-object[property] = dataType(value);
-}); // return handler
-} // updateValue
 } // createControl
 
+function createUpdateHandler (ui) {
+const {receiver, container} = ui;
+//console.debug("createUpdateHandler: ", receiver.name, container.className);
+if (! receiver) throw new Error("need receiver");
+if (! container) throw new Error("need container");
+
+return e => {
+e.stopPropagation();
+//e.stopImmediatePropagation();
+
+
+const element = e.target;
+const name = element.dataset.name;
+const dataType = Control.dataTypeMap.get(element.closest(".field").dataset.dataType);
+const value = getValue(element);
+if (nullish(value)) return;
+console.debug("in change handler: ", element.className, name, dataType, value );
+
+if (receiver[name] instanceof Function) receiver[name].call(receiver, dataType(value));
+else updateValue(receiver, name, dataType(value));
+}; // function
+} // createUpdateHandler
+
+
+function updateValue (receiver, property, value) {
+console.debug("updateValue: ", receiver instanceof AudioNode? " AudioNode " : " AudioComponent ", receiver.name || receiver.label, property, value);
+if (property instanceof Function) property.call(receiver, value);
+else receiver[property] = value;
+} // updateValue
+
+export function update (element) {
+element.dispatchEvent(new CustomEvent("change", {bubbles: true}));
+} // update
 
 function booleanHelper (element) {
 element.addEventListener("click", e => {
@@ -142,4 +160,6 @@ function getValue (element) {
 return element instanceof HTMLButtonElement? getState(element) : element.value;
 } // getValue
 
+
 function nullish (value) {return value === null || value === undefined || value === "";}
+

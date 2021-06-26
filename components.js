@@ -1,4 +1,5 @@
-import {audioContext, AudioComponent, wrapWebaudioNode, Destination, Series, Parallel} from "./audioComponent.js";
+import {Control, update} from "./binder.js";
+import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Destination, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
 
@@ -13,7 +14,11 @@ setDepth(ui.container, 1);
 buildDom(component, ui.container);
 
 ui.container.addEventListener ("keydown", numericFieldKeyboardHandler);
-setTimeout(() => statusMessage("Ready."), 1);
+ui.container.querySelectorAll("input, button").forEach(x => update(x));
+
+
+setTimeout(() => statusMessage("Ready."), 10); // give time for dom to settle
+
 return ui.container;
 } // app
 
@@ -38,6 +43,18 @@ export function gain (options) {
 return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createGain()));
 } // gain
 
+export function reverseStereo (options) {
+const component = ReverseStereo (AudioContext);
+const ui = new Control(component, "reverse stereo");
+
+createFields(
+component, null, ui,
+AudioComponent.sharedParameters
+);
+
+return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createGain())); // createFields
+} // reverseStereo
+
 export function filter (options) {
 return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createBiquadFilter()));
 } // filter
@@ -51,17 +68,15 @@ return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createDelay()
 
 export function series (...children) {
 const options = children[0] instanceof AudioComponent?
-"" : shift(children);
+"" : children.shift();
 const component = new Series (audioContext, children);
 component.type = "container";
 const ui = new Control(component, "series");
+createFields(
+component, null, ui,
+["bypass", "silentBypass", "mix", "feedBack", "delay"]
+); // createFields
 
-ui.container.appendChild(ui.boolean({name: "bypass"}));
-ui.container.appendChild(ui.boolean({name: "silentBypass"}));
-
-ui.container.appendChild(ui.number({name: "mix", min: -1, max: 1, step: 0.1}));
-ui.container.appendChild(ui.number({name: "feedBack", min: -1, max: 1, step: 0.1}));
-ui.container.appendChild(ui.number({name: "delay", min: 0, max: 1, step: 0.00001}));
 
 component.ui = ui;
 return applyFieldDescriptor(options, component);
@@ -69,14 +84,14 @@ return applyFieldDescriptor(options, component);
 
 export function parallel (...children) {
 const options = children[0] instanceof AudioComponent?
-"" : shift(children);
+"" : children.shift();
 const component = new Parallel(audioContext, children);
 component.type = "container";
 const ui = new Control(component, "parallel");
-
-ui.container.appendChild(ui.boolean({name: "bypass"}));
-ui.container.appendChild(ui.boolean({name: "silentBypass"}));
-ui.container.appendChild(ui.number({name: "mix", min: -1, max: 1, step: 0.1}));
+createFields(
+component, null, ui,
+["bypass", "silentBypass", "mix"]
+); // createFields
 
 component.ui = ui;
 return applyFieldDescriptor(options, component);
@@ -85,25 +100,26 @@ return applyFieldDescriptor(options, component);
 /// helpers
 
 function applyFieldDescriptor (fd, component) {
-if (!fd) fd = "";
+if (!fd) return component;
+
 const container = component.ui.container;
 const descriptors = typeof(fd) === "string" || (fd instanceof String)?
 parseFieldDescriptor(fd) : fd;
-console.debug("applying descriptors: ", descriptors, " to ", container);
+//console.debug("applying descriptors: ", descriptors, " to ", container.className);
 
 descriptors.forEach(d => {
 const {name, defaultValue, automation} = d;
-const element = container.querySelector(`input[data-name=${name}`);
+const element = container.querySelector(`[data-name=${name}`);
 
 if (element) {
 if (defaultValue.length > 0) element.value = defaultValue;
-element.dataset.automation = automation;
+if (element instanceof HTMLInputElement && (element.type === "number" || element.type === "range")) element.dataset.automation = automation;
 element.closest(".field").hidden = false;
+console.debug("descriptor: ", name, defaultValue, element);
 } else {
-statusMessage(`field ${name} not found in ${container.className}`, "append");
+throw new Error(`field ${name} not found in ${container.className}`);
 } // if
 }); // forEach
-
 
 return component;
 } // applyFieldDescriptor
@@ -152,6 +168,8 @@ if (commands[key]) commands[key](element, Number(element.value));
 if (element.validationMessage) {
 statusMessage(element.validationMessage);
 element.value = Number(value);
+} else {
+update(element);
 } // if
 } // execute
 
@@ -169,8 +187,15 @@ function decrease50 (input, value) {input.value = value - 50*Number(input.step);
  } // numericFieldKeyboardHandler
 
 
-function statusMessage (text, append) {
+const messageQueue = [];
+function statusMessage (text, append, ignoreQueue) {
 const status = document.querySelector(".root .status, #status");
+if (!status) {
+messageQueue.push(text);
+return;
+} // if
+
+messageQueue.forEach(message => statusMessage(message, "append"));
 if (append) {
 status.setAttribute("aria-atomic", "false");
 status.insertAdjacentHTML("beforeEnd", `<p class="message">${text}</p>\n`);

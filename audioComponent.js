@@ -1,4 +1,5 @@
 import {intersection, difference} from "./setops.js";
+import {Control} from "./binder.js";
 export let audioContext = new AudioContext();
 
 // registry helps generate id strings
@@ -20,7 +21,9 @@ frequency: {min: 20, max: 20000, step: 10},
 coneInnerAngle: {min: 0, max: 360, step: 1},
 coneOuterAngle: {min: 0, max: 360, step: 1},
 mix: {defaultValue: 1, min: -1, max: 1, step: 0.1},
-gain: {defaultValue: 1, min: -10, max: 10, step: 0.1}
+gain: {defaultValue: 1, min: -10, max: 10, step: 0.1},
+feedBack: {defaultValue: 0, min: 0, max: 0.95, step: 0.05},
+delay: {defaultValue: 0, min: 0, max: 1, step: 0.00001}
 }; // constraints
 
 constructor (audio, name, parent = null) {
@@ -157,11 +160,10 @@ if (components.length < 2) this._error("need two or more components");
 
 const first = components[0];
 const last = components[components.length-1];
-this._feedForward = audio.createGain();
 this._delay = audio.createDelay();
 this._feedBack= audio.createGain();
 this._delay.delayTime.value = 0;
-this._feedForward.gain.value = this._feedBack.gain.value = 0;
+this._feedBack.gain.value = 0;
 
 if(first.input) {
 this.input.connect(first.input);
@@ -178,11 +180,6 @@ if (c.output && next.input) {
 c.output.connect(next.input);
 console.log(`- connected ${c.name} to ${next.name}`);
 
-if (c !== last) {
-//c.output.connect(this._feedForward).connect(last.input);
-//console.log(`- feedForward: connected ${c.name} to ${this.name} last`);
-} // if
-
 } else {
 //this._error(`${c.name} and ${next.name} must both be AudioComponents`);
 } // if
@@ -191,10 +188,10 @@ if (c !== last) {
 } // if
 
 if (last.output) {
-last.connect(this.wet);
+last.output.connect(this.wet);
 console.log(`- connected ${last.name} to ${this.name} wet`);
 
-last.connect(this._feedBack).connect(this._delay).connect(first);
+last.output.connect(this._feedBack).connect(this._delay).connect(first.input);
 console.log(`- feedBack ${this.name}: connected ${last.name} to ${first.name}`);
 } // if
 
@@ -204,11 +201,9 @@ this.last = last;
 this.children = this.components = components;
 } // constructor
 
-get feedForward () {return this._feedForward.gain.value;}
 get feedBack () {return this._feedBack.gain.value;}
 get delay () {return this._delay.delayTime.value;}
 
-set feedForward (value) {this._feedForward.gain.value = clamp(value, -1, 1);}
 set feedBack(value) {this._feedBack.gain.value = clamp(value, -0.998, 0.998);}
 set delay (value) {this._delay.delayTime.value = value;}
 } // class Series
@@ -238,6 +233,7 @@ this.children = this.components = components;
 } // constructor
 
 get outputGain () {return this._gain.gain.value;}
+set outputGain (value) {this._gain.gain.value = value;}
 } // class Parallel
 
 export class ReverseStereo extends AudioComponent {
@@ -287,7 +283,10 @@ Object.defineProperty(component, name, descriptor);
 
 // create UI
 const ui = new Control(component, component.name);
-createFields(component, node, ui, reorder([...AudioComponent.sharedParameterNames, ...webaudioParameterNames(node)]));
+createFields(
+component, node, ui,
+reorder([...AudioComponent.sharedParameterNames, ...webaudioParameterNames(node)])
+); // createFields
 
 component.ui = ui;
 return component;
@@ -299,8 +298,11 @@ object[name].value : object[name];
 } // _get
 
 function _set (object, name, value) {
+console.debug(`_set: ${object}, ${name}, ${value}`);
+if (object && name) {
 isAudioParam(object, name)?
 object[name].value  = value : object[name] = value;
+} // if
 return object;
 } // _set
 
@@ -337,18 +339,20 @@ const names = new Set(_names);
 return [...intersection(names, ordering), ...difference(names, ordering)];
 } // reorder
 
-function isAudioParam (node, property) {return node[property] instanceof AudioParam;}
+function isAudioParam (node, property) {return node && node[property] instanceof AudioParam;}
 
 export function createFields (component, node, ui, propertyNames) {
 propertyNames.forEach(property => {
 if (typeof(component[property]) === "number") {
 
 ui.container.appendChild(ui.number(
-Object.assign({
-name: property,
+Object.assign(
+{name: property,
 min: -Infinity, max: Infinity,
-defaultValue: isAudioParam(node, property)? node[property].defaultValue : 0
-}, AudioComponent.constraints[property]
+defaultValue: node?
+(isAudioParam(node, property)? node[property].defaultValue : node[property])
+: 0},
+AudioComponent.constraints[property]
 ) // assign
 ));
 
