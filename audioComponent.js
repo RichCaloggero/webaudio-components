@@ -22,7 +22,7 @@ coneInnerAngle: {min: 0, max: 360, step: 1},
 coneOuterAngle: {min: 0, max: 360, step: 1},
 mix: {defaultValue: 1, min: -1, max: 1, step: 0.1},
 gain: {defaultValue: 1, min: -10, max: 10, step: 0.1},
-feedBack: {defaultValue: 0, min: 0, max: 0.95, step: 0.05},
+feedBack: {defaultValue: 0, min: -0.9, max: 0.9, step: 0.05},
 delay: {defaultValue: 0, min: 0, max: 1, step: 0.00001}
 }; // constraints
 
@@ -245,6 +245,7 @@ this.input.connect(s);
 s.connect(m, 0,1);
 s.connect(m, 1,0);
 m.connect(this.wet);
+this.mix = 1;
 } // constructor
 } // class ReverseStereo
 

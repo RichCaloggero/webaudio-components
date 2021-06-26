@@ -119,7 +119,7 @@ const name = element.dataset.name;
 const dataType = Control.dataTypeMap.get(element.closest(".field").dataset.dataType);
 const value = getValue(element);
 if (nullish(value)) return;
-console.debug("in change handler: ", element.className, name, dataType, value );
+console.debug("in change handler: ", element.tagName, name, dataType, value );
 
 if (receiver[name] instanceof Function) receiver[name].call(receiver, dataType(value));
 else updateValue(receiver, name, dataType(value));

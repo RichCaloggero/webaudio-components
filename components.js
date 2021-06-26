@@ -1,11 +1,19 @@
 import {Control, update} from "./binder.js";
-import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Destination, Series, Parallel} from "./audioComponent.js";
+import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Destination, ReverseStereo, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
 
 /// root (top level UI)
 
 export function app (options, component) {
+if (arguments.length === 1) {
+component = arguments[0];
+options = "";
+} else if (arguments.length !== 2) {
+alert ("app: must have either 1 or 2 arguments");
+return;
+} // if
+
 const ui = new Control({}, "App");
 ui.container.insertAdjacentHTML("afterBegin", '<div role="status" aria-atomic="true" aria-label="status" class="status"></div>\n');
 ui.container.classList.add("root");
@@ -44,15 +52,16 @@ return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createGain())
 } // gain
 
 export function reverseStereo (options) {
-const component = ReverseStereo (AudioContext);
-const ui = new Control(component, "reverse stereo");
+const component = new ReverseStereo (audioContext);
+const ui = new Control(component, "reverseStereo");
 
 createFields(
 component, null, ui,
-AudioComponent.sharedParameters
-);
+AudioComponent.sharedParameterNames
+); // createFields
 
-return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createGain())); // createFields
+component.ui = ui;
+return applyFieldDescriptor(options, component);
 } // reverseStereo
 
 export function filter (options) {
