@@ -5,7 +5,13 @@
 <title>Test</title>
 </head>
 <body> 
-<audio crossorigin="anonymous" src="./t.flac" controls></audio>
+<audio crossorigin="anonymous"
+src="./t.m4a"
+controls></audio>
+
+<div id="ui">
+<label>Parallel filters: <input type="checkbox" checked id="parallel-filters"></label>
+</div>
 
 <!--<script type="module" src="setops.js"></script>
 <script type="module" src="audioComponent.js"></script>
@@ -20,27 +26,37 @@ import * as setop from "./setops.js";
 const media = document.querySelector("audio");
 const source = audioContext.createMediaElementSource(media);
 
-/*const s = audioContext.createChannelSplitter(2);
-const m = audioContext.createChannelMerger(2);
-source.connect(s);
-s.connect(m, 0,1);
-s.connect(m, 1,0);
-m.connect(audioContext.destination);
-*/
-
-const root = audio.series(
+document.body.appendChild(audio.app("",
+audio.series(
 audio.player(media),
 
-audio.series("mix=0; feedBack; delay=0.00009",
-audio.reverseStereo("mix; bypass"),
-audio.filter("type=highpass; frequency=300; Q=4.3"),
-audio.filter("type=lowpass; frequency=4000; Q=4.3"),
+//audio-series("",
+audio.series("bypass; mix=-0.4; feedBack=0.8; delay=0.00009; delayBeforeOutput=true",
+audio.reverseStereo(),
+parallelFilters(),
 ), // series
 
-audio.destination()
-); // series
+//audio.gain("gain=1.3")
+//), // series
 
-document.body.appendChild(audio.app(root));
+audio.destination()
+) // series
+)); // audio.app
+
+function seriesFilters () {
+return audio.series("bypass",
+audio.filter("type=highpass; frequency=300; Q=4.3"),
+audio.filter("type=lowpass; frequency=4000; Q=4.3")
+); // series
+} // seriesFilters
+
+function parallelFilters () {
+return audio.parallel("bypass",
+audio.filter("type=lowshelf; frequency=300; Q=4.3"),
+audio.filter("type=highshelf; frequency=4000; Q=4.3")
+); // parallel
+} // parallelFilters
+
 </script>
 
 </body>

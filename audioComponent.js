@@ -160,6 +160,10 @@ if (components.length < 2) this._error("need two or more components");
 
 const first = components[0];
 const last = components[components.length-1];
+this.first = first;
+this.last = last;
+this.children = this.components = components;
+
 this._delay = audio.createDelay();
 this._feedBack= audio.createGain();
 this._delay.delayTime.value = 0;
@@ -188,24 +192,38 @@ console.log(`- connected ${c.name} to ${next.name}`);
 } // if
 
 if (last.output) {
-last.output.connect(this.wet);
-console.log(`- connected ${last.name} to ${this.name} wet`);
+last.output.connect(this._delay).connect(this._feedBack).connect(first.input);
 
-last.output.connect(this._feedBack).connect(this._delay).connect(first.input);
-console.log(`- feedBack ${this.name}: connected ${last.name} to ${first.name}`);
+console.log(`- connected ${last.name} to ${this.name} wet`);
+this.delayBeforeOutput = false;
+
 } // if
 
 
-this.first = first;
-this.last = last;
-this.children = this.components = components;
 } // constructor
+
+
 
 get feedBack () {return this._feedBack.gain.value;}
 get delay () {return this._delay.delayTime.value;}
+get delayBeforeOutput () {return this._delayBeforeOutput;}
 
 set feedBack(value) {this._feedBack.gain.value = clamp(value, -0.998, 0.998);}
 set delay (value) {this._delay.delayTime.value = value;}
+
+set delayBeforeOutput (value) {
+if (value) {
+this.last.output.disconnect();
+this.last.connect(this._delay);
+this._delay.connect(this.wet);
+this._delay.connect(this._feedBack);
+} else {
+this._delay.disconnect();
+this.last.output.connect(this.wet);
+this._delay.connect(this._feedBack);
+} // if
+this._delayBeforeOutput = value;
+} // delayBeforeOutput
 } // class Series
 
 export class Parallel extends AudioComponent {

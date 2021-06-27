@@ -1,4 +1,4 @@
-import {Control, update} from "./binder.js";
+import {Control, update, setValue} from "./binder.js";
 import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Destination, ReverseStereo, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
@@ -37,7 +37,7 @@ export function player (source, options) {
 const sourceNode = source instanceof HTMLMediaElement?
 audioContext.createMediaElementSource(source)
 : createBufferSource(source);
-return applyFieldDescriptor(options, wrapWebaudioNode(sourceNode));
+return applyFieldInitializer(options, wrapWebaudioNode(sourceNode));
 } // player
 
 export function destination () {
@@ -48,7 +48,7 @@ return component;
 } // destination
 
 export function gain (options) {
-return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createGain()));
+return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createGain()));
 } // gain
 
 export function reverseStereo (options) {
@@ -61,15 +61,15 @@ AudioComponent.sharedParameterNames
 ); // createFields
 
 component.ui = ui;
-return applyFieldDescriptor(options, component);
+return applyFieldInitializer(options, component);
 } // reverseStereo
 
 export function filter (options) {
-return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createBiquadFilter()));
+return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquadFilter()));
 } // filter
 
 export function delay(options) {
-return applyFieldDescriptor(options, wrapWebaudioNode(audioContext.createDelay()));
+return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createDelay()));
 } // delay
 
 
@@ -83,12 +83,12 @@ component.type = "container";
 const ui = new Control(component, "series");
 createFields(
 component, null, ui,
-["bypass", "silentBypass", "mix", "feedBack", "delay"]
+["bypass", "silentBypass", "mix", "feedBack", "delay", "delayBeforeOutput"]
 ); // createFields
 
 
 component.ui = ui;
-return applyFieldDescriptor(options, component);
+return applyFieldInitializer(options, component);
 } // series
 
 export function parallel (...children) {
@@ -103,25 +103,24 @@ component, null, ui,
 ); // createFields
 
 component.ui = ui;
-return applyFieldDescriptor(options, component);
+return applyFieldInitializer(options, component);
 } // parallel
 
 /// helpers
 
-function applyFieldDescriptor (fd, component) {
+function applyFieldInitializer (fd, component) {
 if (!fd) return component;
 
 const container = component.ui.container;
 const descriptors = typeof(fd) === "string" || (fd instanceof String)?
 parseFieldDescriptor(fd) : fd;
-//console.debug("applying descriptors: ", descriptors, " to ", container.className);
 
 descriptors.forEach(d => {
 const {name, defaultValue, automation} = d;
 const element = container.querySelector(`[data-name=${name}`);
 
 if (element) {
-if (defaultValue.length > 0) element.value = defaultValue;
+if (defaultValue.length > 0) setValue(element, defaultValue);
 if (element instanceof HTMLInputElement && (element.type === "number" || element.type === "range")) element.dataset.automation = automation;
 element.closest(".field").hidden = false;
 console.debug("descriptor: ", name, defaultValue, element);
@@ -131,7 +130,7 @@ throw new Error(`field ${name} not found in ${container.className}`);
 }); // forEach
 
 return component;
-} // applyFieldDescriptor
+} // applyFieldInitializer
 
 function createBufferSource (buffer) {
 const source = audioContext.createBufferSource();

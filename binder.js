@@ -20,6 +20,7 @@ this.label = label;
 this.container = document.createElement("div");
 //this.container.setAttribute("role", "main");
 //this.container.setAttribute("aria-roledescription", "component");
+//this.container.setAttribute("aria-label", label);
 this.container.className = `component ${label}`;
 this.container.innerHTML = `
 <div class="component-title" role="heading">${label}</div>
@@ -139,10 +140,8 @@ element.dispatchEvent(new CustomEvent("change", {bubbles: true}));
 
 function booleanHelper (element) {
 element.addEventListener("click", e => {
-setAriaState(!getState(e.target));
+setState(e.target, !getState(e.target));
 e.target.dispatchEvent(new CustomEvent("change", {bubbles: true}));
-
-function setAriaState (value) {e.target.setAttribute("aria-pressed", value? "true" : "false");}
 }); // click handler
 } // booleanHelper
 
@@ -150,15 +149,29 @@ function separateWords (text) {
 return text.replace(/([a-z])([A-Z])([a-z])/g, "$1 $2$3");
 } // separateWords
 
-function getState (button) {
+export function getState (button) {
 return button.hasAttribute("aria-pressed")?
 button.getAttribute("aria-pressed") === "true"
 : false;
 } // getState
 
-function getValue (element) {
+export function setState (button, value) {
+if (button.hasAttribute("aria-pressed")) {
+button.setAttribute("aria-pressed", value? "true" : "false");
+} // if
+} // setState
+
+export function getValue (element) {
 return element instanceof HTMLButtonElement? getState(element) : element.value;
 } // getValue
+
+export function setValue (element, value) {
+if (element instanceof HTMLButtonElement) {
+setState(element, value);
+} else {
+element.value = value;
+} // if
+} // setValue
 
 
 function nullish (value) {return value === null || value === undefined || value === "";}
