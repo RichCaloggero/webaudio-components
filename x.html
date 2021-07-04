@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test</title>
+</head>
+<body> 
+<audio crossorigin="anonymous"
+src="./t.flac"
+controls></audio>
+
+<div id="control">
+<br><label>dry: <input type="number" id="dry" value="0.5" min="-1" max="1" step="0.1"></label>
+<label>wet: <input type="number" id="wet" value="0.9" min="-1" max="3" step="0.1"></label>
+
+<br><label>Delay: <input type="number" id="delay" value="0.00009" min="0" max="1" step="0.00001"></label>
+<label>feedback: <input type="number" id="feedback" value="0.95" min="-1" max="1" step="0.05"></label>
+
+<fieldset><legend><h2>mid</h2></legend>
+<br><label>frequency: <input type="number" id="frequency" value="950.0" min="500" max="8000" step="10"></label>
+<label>Q: <input type="number" id="q" value="0.004" min="0.001" max="20" step="0.001"></label>
+<label>gain: <input type="number" id="gain" value="-6" min="-50" max="0" step="0.5"></label>
+</fieldset>
+
+<fieldset><legend><h2>low</h2></legend>
+<label>Q: <input type="number" id="low-q" value="0.004" min="0.001" max="20" step="0.001"></label>
+<label>gain: <input type="number" id="low-gain" value="-20" min="-50" max="0" step="0.5"></label>
+</fieldset>
+
+
+
+<br><label>invert phase: <input type="checkbox" checked id="invertPhase"></label>
+<label>Reverse stereo: <input type="checkbox" checked id="reverseStereo"></label>
+</div>
+
+
+
+<script type="module">
+const audioContext = new AudioContext();
+const media = document.querySelector("audio");
+const source = audioContext.createMediaElementSource(media);
+const dry = audioContext.createGain();
+const wet = audioContext.createGain();
+const low = audioContext.createBiquadFilter();
+const mid = audioContext.createBiquadFilter();
+const high = audioContext.createBiquadFilter();
+
+
+await audioContext.resume();
+await audioContext.audioWorklet.addModule("./xtc.worklet.js");
+const xtc = new AudioWorkletNode(audioContext, "xtc");
+
+
+source.connect(dry).connect(audioContext.destination);
+source
+.connect(low).connect(mid).connect(high)
+.connect(xtc).connect(wet).connect(audioContext.destination);
+
+low.type = "lowshelf";
+low.frequency.value = 500;
+low.Q.value = .004;
+low.gain.value = -32;
+high.type = "highshelf";
+high.frequency.value = 8000;
+high.Q.value = .0025;
+high.gain.value = -32;
+mid.type = "peaking";
+mid.frequency.value = 950;
+mid.Q.value = .002;
+mid.gain.value = -7.0;
+
+bind("wet", wet, "gain");
+bind("dry", dry, "gain");
+bind("delay", xtc, "delay");
+bind("feedback", xtc, "feedback");
+
+bind("frequency", mid, "frequency");
+bind("q", mid, "Q");
+bind("gain", mid, "gain");
+
+bind("low-q", low, "Q");
+bind("low-gain", low, "gain");
+
+document.querySelector("#invertPhase").addEventListener("change", e => update(xtc, "gain", e.target.checked? -1 : 1));
+document.querySelector("#reverseStereo").addEventListener("change", e => update(xtc, "reverseStereo", e.target.checked? 1 : 0));
+
+
+
+function bind (name, audioNode, prop) {
+const element = document.querySelector(`#${name}`);
+element.addEventListener("change", e => update(audioNode, prop, getValue(name)));
+update(audioNode, prop, getValue(name));
+console.debug("bound ", name, " to ", prop, " on ", audioNode.constructor.name);
+} // bind
+
+
+function update(audioNode, prop, value) {
+let param;
+if (prop in audioNode) {
+param = audioNode[prop];
+} else if (audioNode.parameters && audioNode.parameters.has(prop)) {
+param = audioNode.parameters.get(prop);
+} else {
+alert(`update: can't update property ${prop} on ${audioNode} to ${value}`);
+throw new Error("cannot update");
+} // if
+
+if (param instanceof AudioParam) param.value = value;
+else param = value;
+console.debug("updated ", prop, value);
+} // update
+
+async  function createXtc (audioContext) {
+} // createXtc
+
+function getValue (id) {
+const element = document.querySelector(`#${id}`);
+return element.type === "checkbox"? element.checked : element.value;
+} // getValue
+
+</script>
+
+</body>
+</html>

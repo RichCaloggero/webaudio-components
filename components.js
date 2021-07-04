@@ -1,5 +1,5 @@
 import {Control, update, setValue} from "./binder.js";
-import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Destination, ReverseStereo, Series, Parallel} from "./audioComponent.js";
+import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, ReverseStereo, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
 
@@ -69,7 +69,15 @@ return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquad
 } // filter
 
 export function delay(options) {
-return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createDelay()));
+const component = new Delay(audioContext);
+const ui = new Control(component, "delay");
+createFields(
+component, null, ui,
+[...AudioComponent.sharedParameterNames, "delay", "feedBack"]
+); // createFields
+
+component.ui = ui;
+return applyFieldInitializer(options, component);
 } // delay
 
 
@@ -116,6 +124,7 @@ const descriptors = typeof(fd) === "string" || (fd instanceof String)?
 parseFieldDescriptor(fd) : fd;
 
 descriptors.forEach(d => {
+console.debug("initializer: ", d);
 const {name, defaultValue, automation} = d;
 const element = container.querySelector(`[data-name=${name}`);
 
