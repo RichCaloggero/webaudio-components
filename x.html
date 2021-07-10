@@ -6,27 +6,34 @@
 </head>
 <body> 
 <audio crossorigin="anonymous"
-src="./t.flac"
+src="./t.mp3"
 controls></audio>
 
 <div id="control">
-<br><label>dry: <input type="number" id="dry" value="0" min="-1" max="1" step="0.1"></label>
+<br><label>dry: <input accesskey="0" type="number" id="dry" value="0" min="-1" max="1" step="0.1"></label>
 <label>wet: <input type="number" id="wet" value="2" min="-1" max="3" step="0.1"></label>
 
-<br><label>Delay: <input type="number" id="delay" value="0.5" min="0" max="1" step="0.00001"></label>
-<label>feedback: <input type="number" id="feedback" value="0.5" min="-1" max="1" step="0.05"></label>
-
-<fieldset><legend><h2>mid</h2></legend>
-<br><label>frequency: <input type="number" id="frequency" value="950.0" min="500" max="8000" step="10"></label>
-<label>Q: <input type="number" id="q" value="0.004" min="0.001" max="20" step="0.001"></label>
-<label>gain: <input type="number" id="gain" value="-6" min="-50" max="0" step="0.5"></label>
-</fieldset>
+<br><label>Delay: <input type="number" id="delay" value="0.00009" min="0" max="1" step="0.00001"></label>
+<label>feedback: <input type="number" id="feedback" value="0.93" min="-1" max="1" step="0.05"></label>
 
 <fieldset><legend><h2>low</h2></legend>
-<label>Q: <input type="number" id="low-q" value="0.004" min="0.001" max="20" step="0.001"></label>
-<label>gain: <input type="number" id="low-gain" value="-20" min="-50" max="0" step="0.5"></label>
+<label>Q: <input accesskey="1" type="number" id="low-q" value="0.66" min="0.001" max="20" step="0.001"></label>
+<label>gain: <input type="number" id="low-gain" value="-20" min="-100" max="0" step="0.5"></label>
+<label>type: <input type="text" id="low-type" value="lowshelf"></label>
 </fieldset>
 
+<fieldset><legend><h2>mid</h2></legend>
+<br><label>Q: <input  type="number" id="mid-q" value="0.266" min="0.001" max="20" step="0.001"></label>
+<label>gain: <input type="number" id="mid-gain" value="-6" min="-100" max="0" step="0.5"></label>
+<label>frequency: <input accesskey="2" type="number" id="mid-frequency" value="950.0" min="500" max="8000" step="10"></label>
+<label>type: <input type="text" id="mid-type" value="peaking"></label>
+</fieldset>
+
+<fieldset><legend><h2>high</h2></legend>
+<label>Q: <input accesskey="3" type="number" id="high-q" value="0.66" min="0.001" max="20" step="0.001"></label>
+<label>gain: <input type="number" id="high-gain" value="-20" min="-100" max="0" step="0.5"></label>
+<label>type: <input type="text" id="high-type" value="highshelf"></label>
+</fieldset>
 
 
 <br><label>invert phase: <input type="checkbox" checked id="invertPhase"></label>
@@ -41,14 +48,15 @@ const media = document.querySelector("audio");
 const source = audioContext.createMediaElementSource(media);
 const dry = audioContext.createGain();
 const wet = audioContext.createGain();
-const low = audioContext.createBiquadFilter();
-const mid = audioContext.createBiquadFilter();
-const high = audioContext.createBiquadFilter();
+const low = window.low = audioContext.createBiquadFilter();
+const mid = window.mid = audioContext.createBiquadFilter();
+const high = window.high = audioContext.createBiquadFilter();
 
 
 await audioContext.resume();
 await audioContext.audioWorklet.addModule("./xtc.worklet.js");
 const xtc = new AudioWorkletNode(audioContext, "xtc");
+window.xtc = xtc;
 
 
 source.connect(dry).connect(audioContext.destination);
@@ -58,15 +66,15 @@ source
 
 low.type = "lowshelf";
 low.frequency.value = 500;
-low.Q.value = .004;
+low.Q.value = .66;
 low.gain.value = -32;
 high.type = "highshelf";
 high.frequency.value = 8000;
-high.Q.value = .0025;
+high.Q.value = 0.66;
 high.gain.value = -32;
 mid.type = "peaking";
 mid.frequency.value = 950;
-mid.Q.value = .002;
+mid.Q.value = 0.266;
 mid.gain.value = -7.0;
 
 bind("wet", wet, "gain");
@@ -74,49 +82,68 @@ bind("dry", dry, "gain");
 bind("delay", xtc, "delay");
 bind("feedback", xtc, "feedback");
 
-bind("frequency", mid, "frequency");
-bind("q", mid, "Q");
-bind("gain", mid, "gain");
-
 bind("low-q", low, "Q");
 bind("low-gain", low, "gain");
+bind("low-type", low, "type");
 
-document.querySelector("#invertPhase").addEventListener("change", e => update(xtc, "gain", e.target.checked? -1 : 1));
-document.querySelector("#reverseStereo").addEventListener("change", e => update(xtc, "reverseStereo", e.target.checked? 1 : 0));
+bind("mid-frequency", mid, "frequency");
+bind("mid-q", mid, "Q");
+bind("mid-gain", mid, "gain");
+bind("mid-type", mid, "type");
+
+bind("high-q", high, "Q");
+bind("high-gain", high, "gain");
+bind("high-type", high, "type");
+
+bind("invertPhase", xtc, "gain", value => value? -1 : 1);
+bind("reverseStereo", xtc, "reverseStereo", value => value? 1 : 0);
 
 
 
-function bind (name, audioNode, prop) {
+function bind (name, audioNode, prop, processValue) {
 const element = document.querySelector(`#${name}`);
-element.addEventListener("change", e => update(audioNode, prop, getValue(name)));
-update(audioNode, prop, getValue(name));
+element.addEventListener("change", e => update(audioNode, prop, getValue(element, processValue)));
+update(audioNode, prop, getValue(element, processValue));
 console.debug("bound ", name, " to ", prop, " on ", audioNode.constructor.name);
 } // bind
 
 
 function update(audioNode, prop, value) {
-let param;
+let param = null;
+
 if (prop in audioNode) {
-param = audioNode[prop];
+if (audioNode[prop] instanceof AudioParam) param = audioNode[prop];
+
 } else if (audioNode.parameters && audioNode.parameters.has(prop)) {
 param = audioNode.parameters.get(prop);
+if (!(param instanceof AudioParam)) param = null;
+
 } else {
 alert(`update: can't update property ${prop} on ${audioNode} to ${value}`);
 throw new Error("cannot update");
 } // if
 
-if (param instanceof AudioParam) param.value = value;
-else param = value;
+param? param.value = Number(value) : audioNode[prop] = value;
 console.debug("updated ", prop, value);
 } // update
 
-async  function createXtc (audioContext) {
-} // createXtc
 
-function getValue (id) {
-const element = document.querySelector(`#${id}`);
-return element.type === "checkbox"? element.checked : element.value;
+function getValue (element, processValue = value => value) {
+return element.type === "checkbox"? processValue(element.checked) : processValue(element.value);
 } // getValue
+
+function bw2q (bw) {
+return Math.sqrt(Math.pow(2,bw))/(Math.pow(2,bw)-1);
+} // bw2q
+
+function q2bw (q) {
+return Math.log(
+Math.sqrt(
+(
+((2+(1/Math.pow(q,2))), 2)/4)-1)+
+(1/(2*q*q))+1)/
+Math.log(2);
+} // q2bw
 
 </script>
 

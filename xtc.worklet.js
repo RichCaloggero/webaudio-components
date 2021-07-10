@@ -36,6 +36,7 @@ constructor (options) {
 super (options);
 this.initializeDelayBuffer();
 this.blockCount = 0;
+this.ibuf = [new Float32Array(4), new Float32Array(4)]; // cubic interpolation
 console.debug(`xtc.worklet ready.`);
 } // constructor
 
@@ -92,6 +93,7 @@ writeOutputSample(channel, i, gain * sample);
 const delayedSample = this.bufferLength(channel) === this.delay? lerp(this.readBuffer(channel), sample, dx) : 0;
 //if (debug) console.debug(`read sample ${i}, length is ${this.bufferLength(channel)}`);
 this.writeBuffer(channel, sample + feedback*delayedSample);
+this.ibufInsert(channel, sample + feedback*delayedSample);
 //if (debug) console.debug(`wrote sample ${i}, length ${this.bufferLength(channel)}`);
 
 writeOutputSample(channel, i, 0.5 * gain * (sample + delayedSample));
@@ -146,6 +148,13 @@ console.error("buffer overrun...");
 } // if
 } // writeBuffer
 
+ibufInsert(channel, value) {
+const length = this.ibuf[channel].length;
+this.ibuf[channel].copyWithin(0,1);
+this.ibuf[channel][length-1] = value;
+} // ibufInsert
+
+
 bufferLength (channel) {
 return this._bufferLength[channel];
 } // bufferLength
@@ -183,6 +192,22 @@ if (debug) console.debug(`allocation complete; lengths are ${this.bufferLength(0
 return count;
 } // allocate
 
+/*delay_read3 () {
+    pos_ = this.curpos - delay;
+    pos_ < 0 ? pos_ += this.size;
+    i_ = floor(pos_);
+    f_ = pos_ - i_;
+    x0_ = this.buf[i_-1]; x1_ = this.buf[i_]; 
+    x2_ = this.buf[i_+1]; x3_ = this.buf[i_+2];
+    a3_ = f_ * f_; a3_ -= 1.0; a3_ *= (1.0 / 6.0);
+    a2_ = (f_ + 1.0) * 0.5; a0_ = a2_ - 1.0;
+    a1_ = a3_ * 3.0; a2_ -= a1_; a0_ -= a3_; a1_ -= f_;
+    a0_ *= f_; a1_ *= f_; a2_ *= f_; a3_ *= f_; a1_ += 1.0;
+    this.curval = a0_*x0_ + a1_*x1_ + a2_*x2_ + a3_*x3_;
+    this.curval;
+);
+*/
+
 
 } // class xtc
 
@@ -201,3 +226,8 @@ function lerp (x, y, a) {return x * (1 - a) + y * a;}
 function clamp (a, min = 0, max = 1) {return Math.min(max, Math.max(min, a));}
 function invlerp (x, y, a) {return clamp((a - x) / (y - x));}
 function range (x1, y1, x2, y2, a) {return lerp(x2, y2, invlerp(x1, y1, a));}
+
+function cubic (x, p) {
+		return p[1] + 0.5 * x*(p[2] - p[0] + x*(2.0*p[0] - 5.0*p[1] + 4.0*p[2] - p[3] + x*(3.0*(p[1] - p[2]) + p[3] - p[0])));
+	} // cubic
+
