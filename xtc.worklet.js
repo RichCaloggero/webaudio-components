@@ -96,7 +96,7 @@ this.writeBuffer(channel, sample + feedback*delayedSample);
 this.ibufInsert(channel, sample + feedback*delayedSample);
 //if (debug) console.debug(`wrote sample ${i}, length ${this.bufferLength(channel)}`);
 
-writeOutputSample(channel, i, 0.5 * gain * (sample + delayedSample));
+writeOutputSample(channel, i, 0.5 * gain * (delayedSample));
 } // if
 
 } // loop over samples

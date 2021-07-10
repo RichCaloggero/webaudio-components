@@ -10,6 +10,7 @@ src="./t.mp3"
 controls></audio>
 
 <div id="control">
+<br><label>Source: <input type="text" id="source" value="t.mp3"></label>
 <br><label>dry: <input accesskey="0" type="number" id="dry" value="0" min="-1" max="1" step="0.1"></label>
 <label>wet: <input type="number" id="wet" value="2" min="-1" max="3" step="0.1"></label>
 
@@ -76,6 +77,8 @@ mid.type = "peaking";
 mid.frequency.value = 950;
 mid.Q.value = 0.266;
 mid.gain.value = -7.0;
+
+bind("source", media, "src");
 
 bind("wet", wet, "gain");
 bind("dry", dry, "gain");
