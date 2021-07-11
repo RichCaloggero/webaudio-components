@@ -5,17 +5,18 @@
 <title>Test</title>
 </head>
 <body> 
-<audio crossorigin="anonymous"
+<br><label>Source: <input type="text" accesskey="s" id="source" value="t.mp3"></label>
+<br><audio crossorigin="anonymous"
 src="./t.mp3"
 controls></audio>
 
 <div id="control">
-<br><label>Source: <input type="text" id="source" value="t.mp3"></label>
 <br><label>dry: <input accesskey="0" type="number" id="dry" value="0" min="-1" max="1" step="0.1"></label>
 <label>wet: <input type="number" id="wet" value="2" min="-1" max="3" step="0.1"></label>
 
 <br><label>Delay: <input type="number" id="delay" value="0.00009" min="0" max="1" step="0.00001"></label>
 <label>feedback: <input type="number" id="feedback" value="0.93" min="-1" max="1" step="0.05"></label>
+<label>interpolation: <input type="number" id="interpolation-type" value="2" min="0" max="2" step="1"></label>
 
 <fieldset><legend><h2>low</h2></legend>
 <label>Q: <input accesskey="1" type="number" id="low-q" value="0.66" min="0.001" max="20" step="0.001"></label>
@@ -84,6 +85,7 @@ bind("wet", wet, "gain");
 bind("dry", dry, "gain");
 bind("delay", xtc, "delay");
 bind("feedback", xtc, "feedback");
+bind("interpolation-type", xtc, "interpolationType");
 
 bind("low-q", low, "Q");
 bind("low-gain", low, "gain");

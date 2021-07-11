@@ -4,6 +4,8 @@ const debug = true;
 let done = false;
 
 class Xtc extends AudioWorkletProcessor {
+static interpolationTypes = ["none", "linear", "cubic"];
+
 static get parameterDescriptors() {
 return [{
 name: "delay",
@@ -24,6 +26,12 @@ minValue: 0,
 maxValue: 1,
 automationRate: "k-rate"
 }, {
+name: "interpolationType",
+defaultValue: 0.0,
+minValue: 0,
+maxValue: 2,
+automationRate: "k-rate"
+}, {
 name: "feedback",
 defaultValue: 0.0,
 minValue: -0.98,
@@ -36,7 +44,7 @@ constructor (options) {
 super (options);
 this.initializeDelayBuffer();
 this.blockCount = 0;
-this.ibuf = [new Float32Array(4), new Float32Array(4)]; // cubic interpolation
+this.last = [[0,0], [0,0]];
 console.debug(`xtc.worklet ready.`);
 } // constructor
 
@@ -45,6 +53,7 @@ this.blockCount += 1;
 const samples = parameters.delay[0] * sampleRate;
 const delay = Math.floor(samples);
 const dx = samples - delay;
+this.interpolationType = Xtc.interpolationTypes[Math.floor(parameters.interpolationType[0])];
 
 const gain = parameters.gain[0];
 const reverseStereo = parameters.reverseStereo[0];
@@ -85,15 +94,17 @@ if (debug) loopCount -= 1;
 */
 
 const sample = inputBuffer[channel][i];
+this.last[channel][1] = this.last[channel][0];
+this.last[channel][0] = sample;
 
 if (delay === 0) {
 writeOutputSample(channel, i, gain * sample);
 
 } else {
-const delayedSample = this.bufferLength(channel) === this.delay? lerp(this.readBuffer(channel), sample, dx) : 0;
+const delayedSample = this.getDelayedSample(channel, dx, sample);
 //if (debug) console.debug(`read sample ${i}, length is ${this.bufferLength(channel)}`);
 this.writeBuffer(channel, sample + feedback*delayedSample);
-this.ibufInsert(channel, sample + feedback*delayedSample);
+//this.ibufInsert(channel, sample + feedback*delayedSample);
 //if (debug) console.debug(`wrote sample ${i}, length ${this.bufferLength(channel)}`);
 
 writeOutputSample(channel, i, 0.5 * gain * (delayedSample));
@@ -148,6 +159,20 @@ console.error("buffer overrun...");
 } // if
 } // writeBuffer
 
+copyDelayBuffer (channel, count = 0) {
+if (count === 0 || count > this.bufferLength(channel)) count = this.bufferLength(channel);
+const buf = [];
+let index = this.readIndex[channel];
+
+for (let i = 0; i < count; i++) {
+buf[i] = this.delayBuffer[channel][index];
+index = (index+1) % this.delay;
+} // for
+
+return buf;
+} // copyDelayBuffer
+
+
 ibufInsert(channel, value) {
 const length = this.ibuf[channel].length;
 this.ibuf[channel].copyWithin(0,1);
@@ -191,6 +216,26 @@ this.delayBuffer[channel] = buffer;
 if (debug) console.debug(`allocation complete; lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
 return count;
 } // allocate
+
+getDelayedSample (channel, dx, sample) {
+if (this.bufferLength(channel) !== this.delay) return 0;
+return this.interpolationType === "cubic"? this.getDelayedSample_cubic(channel, dx, sample) : this.getDelayedSample_linear(channel, dx, sample)
+} // getDelayedSample
+
+getDelayedSample_linear (channel, dx, sample) {
+return this.bufferLength(channel) === this.delay? lerp(this.readBuffer(channel), sample, dx) : 0;
+} // getDelayedSample_linear
+
+getDelayedSample_cubic (channel, dx, sample) {
+if (this.delay < 3) return this.getDelayedSample_linear(channel, sample, dx);
+const p = [sample, ...this.copyDelayBuffer(channel, Math.min(this.bufferLength(channel), 3))];
+// fix readIndex
+this.readBuffer(channel);
+
+//throw new Error(`done with index ${this.readIndex[channel]}`);
+return cubic(dx, p);
+} // getDelayedSample_cubic
+
 
 /*delay_read3 () {
     pos_ = this.curpos - delay;
