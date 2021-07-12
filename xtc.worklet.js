@@ -52,8 +52,8 @@ process (inputs, outputs, parameters) {
 this.blockCount += 1;
 const samples = parameters.delay[0] * sampleRate;
 const delay = Math.floor(samples);
+this.fractionalDelay = samples;
 const dx = samples - delay;
-this.interpolationType = Xtc.interpolationTypes[Math.floor(parameters.interpolationType[0])];
 
 const gain = parameters.gain[0];
 const reverseStereo = parameters.reverseStereo[0];
@@ -71,7 +71,7 @@ return false;
 
 if (delay > 0 && delay !== this.delay) {
 console.debug(`dx: ${dx}`);
-this.delay = this.allocate(delay);
+this.delay = this.allocate(this.fractionalDelay < 1? 1 : delay);
 console.debug(`allocated ${this.delay}, lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
 } else if (delay === 0 && this.delayBuffer[0] !== null) {
 this.initializeDelayBuffer();
@@ -173,13 +173,6 @@ return buf;
 } // copyDelayBuffer
 
 
-ibufInsert(channel, value) {
-const length = this.ibuf[channel].length;
-this.ibuf[channel].copyWithin(0,1);
-this.ibuf[channel][length-1] = value;
-} // ibufInsert
-
-
 bufferLength (channel) {
 return this._bufferLength[channel];
 } // bufferLength
@@ -218,19 +211,18 @@ return count;
 } // allocate
 
 getDelayedSample (channel, dx, sample) {
-if (this.bufferLength(channel) !== this.delay) return 0;
-return this.interpolationType === "cubic"? this.getDelayedSample_cubic(channel, dx, sample) : this.getDelayedSample_linear(channel, dx, sample)
+if (this.delay === 0) return 0;
+return this.bufferLength(channel) < 3? this.getDelayedSample_linear(channel, dx, sample) : this.getDelayedSample_cubic(channel, dx, sample);
+//return this.getDelayedSample_cubic(channel, dx, sample);
 } // getDelayedSample
 
 getDelayedSample_linear (channel, dx, sample) {
-return this.bufferLength(channel) === this.delay? lerp(this.readBuffer(channel), sample, dx) : 0;
+return lerp(this.readBuffer(channel), sample, dx);
 } // getDelayedSample_linear
 
 getDelayedSample_cubic (channel, dx, sample) {
-if (this.delay < 3) return this.getDelayedSample_linear(channel, sample, dx);
-const p = [sample, ...this.copyDelayBuffer(channel, Math.min(this.bufferLength(channel), 3))];
-// fix readIndex
-this.readBuffer(channel);
+const p = [sample, this.readBuffer(channel), ...this.copyDelayBuffer(channel, 2)];
+
 
 //throw new Error(`done with index ${this.readIndex[channel]}`);
 return cubic(dx, p);
