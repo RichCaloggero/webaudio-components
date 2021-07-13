@@ -2,6 +2,10 @@ import {intersection, difference} from "./setops.js";
 import {Control} from "./binder.js";
 export let audioContext = new AudioContext();
 
+await audioContext.resume();
+await audioContext.audioWorklet.addModule("./xtc.worklet.js");
+console.debug("AudioComponent module ready.");
+
 // registry helps generate id strings
 const registry = new Map();
 function registerComponent (name) {
@@ -109,6 +113,66 @@ console.error(message);
 } // _error
 
 } // class AudioComponent
+
+export class Xtc extends AudioComponent {
+constructor (audio) {
+super (audio, "xtc");
+this.low = audio.createBiquadFilter();
+this.mid = audio.createBiquadFilter();
+this.high = audio.createBiquadFilter();
+this.xtc = new AudioWorkletNode(audio, "xtc");
+
+this.input
+.connect(this.low).connect(this.mid).connect(this.high)
+.connect(this.xtc).connect(this.wet);
+window._xtc = this.xtc;
+window.xtc = this;
+window.high = this.high;
+window.context = this.audio;
+} // constructor
+
+get reverseStereo () {return this.xtc.reverseStereo !== 0;}
+get gain () {return this.xtc.parameters.get("gain").value;}
+get delay () {return this.xtc.parameters.get("delay").value;}
+get feedback () {return this.xtc.parameters.get("feedback").value;}
+
+set reverseStereo (value) {this.xtc.parameters.get("reverseStereo").value = 1;}
+set gain (value) {this.xtc.parameters.get("gain").value = value;}
+set delay (value) {this.xtc.parameters.get("delay").value = value;}
+set feedback (value) {this.xtc.parameters.get("feedback").value = value;}
+
+// exposed filter parameters
+get lowFrequency () {return this.low.frequency.value;}
+get lowQ () {return this.low.Q.value;}
+get lowGain() {return this.low.frequency.value;}
+get lowType() {return this.low.type;}
+
+get midFrequency () {return this.mid.frequency.value;}
+get midQ () {return this.mid.Q.value;}
+get midGain() {return this.mid.frequency.value;}
+get midType() {return this.mid.type;}
+
+get highFrequency () {return this.high.frequency.value;}
+get highQ () {return this.high.Q.value;}
+get highGain() {return this.high.frequency.value;}
+get highType() {return this.high.type;}
+
+set lowFrequency (value) {this.low.frequency.value = value;}
+set lowQ (value) {this.low.Q.value = value;}
+set lowGain(value) {this.low.gain.value = value;}
+set lowType (value) {this.low.type = value;}
+
+set midFrequency (value) {this.mid.frequency.value = value;}
+set midQ (value) {this.mid.Q.value = value;}
+set midGain(value) {this.mid.gain.value = value;}
+set midType (value) {this.mid.type = value;}
+
+set highFrequency (value) {this.high.frequency.value = value;}
+set highQ (value) {this.high.Q.value = value;}
+set highGain(value) {this.high.gain.value = value;}
+set highType (value) {this.high.type = value;}
+
+} // class Xtc
 
 export class Destination extends AudioComponent {
 constructor (audio) {

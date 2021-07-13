@@ -1,5 +1,5 @@
 import {Control, update, setValue} from "./binder.js";
-import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, ReverseStereo, Series, Parallel} from "./audioComponent.js";
+import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, Xtc, ReverseStereo, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
 
@@ -80,6 +80,27 @@ component.ui = ui;
 return applyFieldInitializer(options, component);
 } // delay
 
+export function xtc (options = `
+bypass; mix=.3; gain=-1.3; delay=0.00009; feedback=0.9; reverseStereo=1;
+lowType=peaking; lowFrequency=500; lowGain=-30; lowQ=0.266;
+midType=bandpass; midFrequency=950; midGain=-4; midQ=0.66;
+highType=peaking; highFrequency=8000; highGain=-30; highQ=0.266;
+`) {
+const component = new Xtc(audioContext);
+const ui = new Control(component, "xtc");
+
+createFields(
+component, null, ui,
+[...AudioComponent.sharedParameterNames,
+"delay", "feedback", "gain", "reverseStereo",
+"lowType", "lowFrequency", "lowGain", "lowQ",
+"midType", "midFrequency", "midGain", "midQ",
+"highType", "highFrequency", "highGain", "highQ"
+]); // createFields
+
+component.ui = ui;
+return applyFieldInitializer(options, component);
+} // xtc
 
 /// containers
 
@@ -124,6 +145,8 @@ const descriptors = typeof(fd) === "string" || (fd instanceof String)?
 parseFieldDescriptor(fd) : fd;
 
 descriptors.forEach(d => {
+// if multiple semicolons occur in the original string, or if a semi appears at the end, d will be empty so skip 
+if (d.name) {
 console.debug("initializer: ", d);
 const {name, defaultValue, automation} = d;
 const element = container.querySelector(`[data-name=${name}`);
@@ -135,6 +158,7 @@ element.closest(".field").hidden = false;
 console.debug("descriptor: ", name, defaultValue, element);
 } else {
 throw new Error(`field ${name} not found in ${container.className}`);
+} // if
 } // if
 }); // forEach
 

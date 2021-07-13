@@ -6,7 +6,7 @@
 </head>
 <body> 
 <audio crossorigin="anonymous"
-src="./t.flac"
+src="./t.mp3"
 controls></audio>
 
 <!--<script type="module" src="setops.js"></script>
@@ -25,13 +25,7 @@ const source = audioContext.createMediaElementSource(media);
 document.body.appendChild(audio.app("",
 audio.series(
 audio.player(media),
-
-audio.series("bypass; mix=-0.4",
-audio.reverseStereo(),
-parallelFilters(),
-audio.delay("delay=0.00009; feedBack=0")
-), // series
-
+audio.xtc(),
 audio.destination()
 ) // series
 )); // audio.app
