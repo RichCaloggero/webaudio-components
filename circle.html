@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test</title>
+</head>
+<body> 
+<label>source: <input type="text" id="media" value="http://archive.org:80/download/gd1973-10-25.136695.sbd.sirmick.flac16/gd1973-10-25s103.mp3"></label>
+<audio crossorigin="anonymous" controls></audio>
+
+<br><label>x: <input id="x" type="number" value="0" min="-1" max="1" step=".01"></label>
+<br><label>y: <input id="y" type="number" value="0" min="-1" max="1" step=".01"></label>
+<br><label>z: <input id="z" type="number" value="0" min="-1" max="1" step=".01"></label>
+<br><label>r: <input id="r" type="number" value="0" min="0.01" max="1" step="0.01"></label>
+<label>a: <input id="a" type="number" value="0" min="0.0" max="6.28" step="0.01"></label>
+<script src="util.js"></script>
+
+<script>
+const media = document.querySelector("audio");
+const c = new AudioContext();
+const p = c.createPanner();
+const s = c.createMediaElementSource(media);
+const m = c.createChannelMerger(2);
+p.channelCount = 1;
+
+s.connect(m).connect(p).connect(c.destination);
+p.refDistance =1;
+p.rolloffFactor = 1;
+p.coneInnerAngle = 180;
+p.coneOuterAngle = 360;
+p.maxDistance = 10;
+p.orientationX.value = 0;
+p.panningModel = "HRTF";
+
+let a = 0;
+setInterval(() => {
+p.positionX.value = Math.cos(a);
+p.positionZ.value = Math.sin(a);
+a += 0.07;
+}, 80);
+
+
+bind("media", media, "src");
+
+</script>
+
+</body>
+</html>
