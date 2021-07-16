@@ -14,19 +14,30 @@ alert ("app: must have either 1 or 2 arguments");
 return;
 } // if
 
-const ui = new Control({}, "App");
+const app = {
+children: [component],
+enableAutomation: false,
+automationRate: 0.1,
+automationType: "ui"
+}; // app
+const ui = new Control(app, "App");
 ui.container.insertAdjacentHTML("afterBegin", '<div role="status" aria-atomic="true" aria-label="status" class="status"></div>\n');
 ui.container.classList.add("root");
 
+createFields(
+app, ui,
+["enableAutomation", "automationRate", "automationType"]
+); // createFields
+
+app.ui = ui;
 setDepth(ui.container, 1);
 buildDom(component, ui.container);
 
 ui.container.addEventListener ("keydown", numericFieldKeyboardHandler);
 ui.container.querySelectorAll("input, button").forEach(x => update(x));
-
-
 setTimeout(() => statusMessage("Ready."), 10); // give time for dom to settle
 
+ui.component = app;
 return ui.container;
 } // app
 
@@ -204,6 +215,7 @@ function setDepth (container, depth) {
 container.querySelector(".component-title").setAttribute("aria-level", depth);
 } // setDepth
 
+const savedValues = new Map();
 function numericFieldKeyboardHandler (e) {
 // all must be lowercase
 const commands = {
@@ -211,6 +223,7 @@ const commands = {
 "control arrowup": increase10, "pageup": increase50,
 "control arrowdown": decrease10, "pagedown": decrease50,
 "control -": negate, "control 0": zero,
+"control enter": save, "control space": swap,
 };
 
 const key = eventToKey(e).join(" ");
@@ -231,6 +244,22 @@ element.value = Number(value);
 update(element);
 } // if
 } // execute
+
+function save (element, value) {
+savedValues.set(element, value);
+statusMessage("saved.");
+} // save
+
+function swap (element, value) {
+if (!savedValues.has(element)) {
+statusMessage("no saved value.");
+return;
+} // if
+
+const savedValue = savedValues.get(element);
+savedValues.set(element, value);
+element.value = Number(savedValue);
+} // swap
 
 function negate (input, value) {input.value = -1*value;}
 function zero (input) {input.value = 0;}

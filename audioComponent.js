@@ -178,8 +178,10 @@ constructor (audio, media) {
 super (audio, "player");
 this.input = null;
 this._media = null;
+
 if (media instanceof AudioBuffer) {
 this.source = createBufferSource(media);
+
 } else {
 this._media = document.createElement("audio");
 audio.src = media instanceof String || typeof(media) === "string"? media : "";
