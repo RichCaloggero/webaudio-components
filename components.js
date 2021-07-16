@@ -38,9 +38,16 @@ const component = new Player(audioContext, media);
 
 const ui = new Control(component, "player");
 createFields(
-component, null, ui,
-["media", "play", "pause"]
+component, ui,
+["media", "play", "pause", "position"]
 ); // createFields
+
+const position = ui.container.querySelector("[data-name=position]");
+component._media.addEventListener("timeupdate", e => {
+if (!component._media.seeking) position.value = Number(e.target.currentTime.toFixed(1))
+});
+position.step = 0.1;
+
 
 component.ui = ui;
 return applyFieldInitializer(options, component);
@@ -62,7 +69,7 @@ const component = new ReverseStereo (audioContext);
 const ui = new Control(component, "reverseStereo");
 
 createFields(
-component, null, ui,
+component, ui,
 AudioComponent.sharedParameterNames
 ); // createFields
 
@@ -82,7 +89,7 @@ export function delay(options) {
 const component = new Delay(audioContext);
 const ui = new Control(component, "delay");
 createFields(
-component, null, ui,
+component, ui,
 [...AudioComponent.sharedParameterNames, "delay", "feedBack"]
 ); // createFields
 
@@ -100,7 +107,7 @@ const component = new Xtc(audioContext);
 const ui = new Control(component, "xtc");
 
 createFields(
-component, null, ui,
+component, ui,
 [...AudioComponent.sharedParameterNames,
 "delay", "feedback", "gain", "reverseStereo",
 "lowType", "lowFrequency", "lowGain", "lowQ",
@@ -121,7 +128,7 @@ const component = new Series (audioContext, children);
 component.type = "container";
 const ui = new Control(component, "series");
 createFields(
-component, null, ui,
+component, ui,
 ["bypass", "silentBypass", "mix", "feedBack", "delay", "delayBeforeOutput"]
 ); // createFields
 
@@ -137,7 +144,7 @@ const component = new Parallel(audioContext, children);
 component.type = "container";
 const ui = new Control(component, "parallel");
 createFields(
-component, null, ui,
+component, ui,
 ["bypass", "silentBypass", "mix"]
 ); // createFields
 

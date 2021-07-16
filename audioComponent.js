@@ -177,20 +177,36 @@ export class Player extends AudioComponent {
 constructor (audio, media) {
 super (audio, "player");
 this.input = null;
-this.source = (media instanceof HTMLMediaElement)? audio.createMediaElementSource(media) : createBufferSource(media);
+this._media = null;
+if (media instanceof AudioBuffer) {
+this.source = createBufferSource(media);
+} else {
+this._media = document.createElement("audio");
+audio.src = media instanceof String || typeof(media) === "string"? media : "";
+this._media.setAttribute("crossorigin", "anonymous");
+this.source = audio.createMediaElementSource(this._media);
+this.play = false;
+} // if
+
 this.source.connect(this.output);
-this._media = media;
 } // constructor
 
 get hasMediaElement () {return this._media instanceof HTMLMediaElement;}
 
 get media () {return this.hasMediaElement? this._media.src : null;}
+set media (value) {
+if (this.hasMediaElement) {
+this._media.src = value;
+this.play = false;
+} // if
+} // set media
 
-set media (value) {if (this.hasMediaElement) this._media.src = value;}
 
 get play () {return this.hasMediaElement? !this._media.paused : false;}
 set play (value) {if (this.hasMediaElement) value? this._play() : this._pause();}
 
+get position () {return this.hasMediaElement? this._media.currentTime : 0;}
+set position (value) {if (this.hasMediaElement) this._media.currentTime = clamp(value, 0, this._media.duration);}
 
 _play () {if (this.hasMediaElement) this._media.play();}
 _pause () {if (this.hasMediaElement) this._media.pause();}
@@ -378,8 +394,9 @@ Object.defineProperty(component, name, descriptor);
 // create UI
 const ui = new Control(component, component.name);
 createFields(
-component, node, ui,
-reorder([...AudioComponent.sharedParameterNames, ...webaudioParameterNames(node)])
+component, ui,
+reorder([...AudioComponent.sharedParameterNames, ...webaudioParameterNames(node)]),
+node
 ); // createFields
 
 component.ui = ui;
@@ -435,7 +452,7 @@ return [...intersection(names, ordering), ...difference(names, ordering)];
 
 function isAudioParam (node, property) {return node && node[property] instanceof AudioParam;}
 
-export function createFields (component, node, ui, propertyNames) {
+export function createFields (component, ui, propertyNames, node = null) {
 propertyNames.forEach(property => {
 if (typeof(component[property]) === "number") {
 
