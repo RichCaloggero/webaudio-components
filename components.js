@@ -1,5 +1,5 @@
 import {Control, update, setValue} from "./binder.js";
-import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, Xtc, ReverseStereo, Series, Parallel} from "./audioComponent.js";
+import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
 
@@ -33,11 +33,17 @@ return ui.container;
 
 /// wrapped webaudio nodes
 
-export function player (source, options) {
-const sourceNode = source instanceof HTMLMediaElement?
-audioContext.createMediaElementSource(source)
-: createBufferSource(source);
-return applyFieldInitializer(options, wrapWebaudioNode(sourceNode));
+export function player (media, options) {
+const component = new Player(audioContext, media);
+
+const ui = new Control(component, "player");
+createFields(
+component, null, ui,
+["media", "play", "pause"]
+); // createFields
+
+component.ui = ui;
+return applyFieldInitializer(options, component);
 } // player
 
 export function destination () {
@@ -66,6 +72,10 @@ return applyFieldInitializer(options, component);
 
 export function filter (options) {
 return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquadFilter()));
+} // filter
+
+export function panner (options) {
+return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createPanner()));
 } // filter
 
 export function delay(options) {
@@ -144,6 +154,7 @@ const container = component.ui.container;
 const descriptors = typeof(fd) === "string" || (fd instanceof String)?
 parseFieldDescriptor(fd) : fd;
 
+const initialized = [];
 descriptors.forEach(d => {
 // if multiple semicolons occur in the original string, or if a semi appears at the end, d will be empty so skip 
 if (d.name) {
@@ -154,7 +165,7 @@ const element = container.querySelector(`[data-name=${name}`);
 if (element) {
 if (defaultValue.length > 0) setValue(element, defaultValue);
 if (element instanceof HTMLInputElement && (element.type === "number" || element.type === "range")) element.dataset.automation = automation;
-element.closest(".field").hidden = false;
+initialized.push(element.closest(".field"));
 console.debug("descriptor: ", name, defaultValue, element);
 } else {
 throw new Error(`field ${name} not found in ${container.className}`);
@@ -162,14 +173,14 @@ throw new Error(`field ${name} not found in ${container.className}`);
 } // if
 }); // forEach
 
+/*container.querySelectorAll(".field").forEach(f => f.hidden = true);
+initialized.forEach(f => f.hidden = false);
+console.log(`${container.className}: ${initialized.length} fields initialized.`);
+*/
+
 return component;
 } // applyFieldInitializer
 
-function createBufferSource (buffer) {
-const source = audioContext.createBufferSource();
-source.buffer = buffer;
-return source;
-} // createBufferSource
 
 function buildDom(root, dom, depth = 1) {
 const container = root.ui.container;

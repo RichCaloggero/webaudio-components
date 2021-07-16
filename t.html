@@ -6,45 +6,45 @@
 </head>
 <body> 
 <audio crossorigin="anonymous"
-src="./t.mp3"
-controls></audio>
+src="http://archive.org:80/download/gd1973-10-25.136695.sbd.sirmick.flac16/gd1973-10-25s103.mp3"></audio>
 
-<!--<script type="module" src="setops.js"></script>
-<script type="module" src="audioComponent.js"></script>
-<script type="module" src="components.js"></script>
--->
+<div>
+<br><label>radius: <input type="number" id="r" value="1"></label>
+<label>delta angle: <input type="number" id="delta-angle" value=".1"></label>
+</div>
+
 
 <script type="module">
 import {AudioComponent, audioContext} from "./audioComponent.js";
 import * as audio from "./components.js";
 import * as setop from "./setops.js";
+import {getValue, setValue} from "./binder.js";
 
 const media = document.querySelector("audio");
-const source = audioContext.createMediaElementSource(media);
 
 document.body.appendChild(audio.app("",
 audio.series(
-audio.player(media),
-audio.xtc(),
+window.player = audio.player(media),
+window.panner = audio.panner("panningModel=HRTF; maxDistance=100; refDistance=10; orientationX=0"),
+window.xtc = audio.xtc("mix=0.3; feedback=0.82; delay=0.00009; gain=-2; lowType=lowShelf; lowGain=-20; lowFrequency=500; lowQ=.26; midType=bandpass; midFrequency=950; midQ=.6; highType=peaking; highFrequency=8000; highGain=-15; highQ=.6"),
 audio.destination()
 ) // series
 )); // audio.app
 
-function parallelFilters () {
-return audio.series("bypass",
-audio.filter("silentBypass=true; type=lowshelf; frequency=500; Q=8.4; gain=-100"),
-audio.filter("bypass; silentBypass=true; type=highshelf; frequency=8000; Q=8.4; gain=-100"),
-audio.gain("gain=2.0")
-); // parallel
-} // parallelFilters
+const p = panner.webaudioNode;
+//p.channelCount = 1;
+let a = 0;
+setInterval(() => {
+const r = Number(getValue(document.querySelector("#r")));
+const x = document.querySelector("[data-name=positionX]");
+const z = document.querySelector("[data-name=positionZ]");
+const dA = Number(getValue(document.querySelector("#delta-angle")));
 
-function seriesFilters () {
-return audio.series("bypass",
-audio.filter("bypass; silentBypass=true; type=lowshelf; frequency=300; Q=1.3; gain=-40"),
-audio.filter("bypass; silentBypass=true; type=highshelf; frequency=2000; Q=1.3; gain=-40"),
-audio.gain("gain=2.0")
-); // series
-} // seriesFilters
+setValue(x, r * Math.cos(a), "change");
+setValue(z, r * Math.sin(a), "change");
+
+a += dA;
+}, 80);
 
 </script>
 

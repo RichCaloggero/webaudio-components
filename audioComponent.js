@@ -20,13 +20,13 @@ let errorVerbosity = 0;
 export class AudioComponent {
 static sharedParameterNames = ["bypass", "silentBypass", "mix"];
 static constraints = {
-Q: {min: -20, max: 20, defaultValue: 1, step: 0.02},
+Q: {min: -20, max: 20, defaultValue: 1, step: 0.01},
 frequency: {min: 20, max: 20000, step: 10},
 coneInnerAngle: {min: 0, max: 360, step: 1},
 coneOuterAngle: {min: 0, max: 360, step: 1},
-mix: {defaultValue: 1, min: -1, max: 1, step: 0.1},
+mix: {defaultValue: 1, min: -1, max: 1, step: 0.01},
 //gain: {defaultValue: 1, min: -100, max: 100, step: 0.1},
-feedBack: {defaultValue: 0, min: -0.9, max: 0.9, step: 0.05},
+feedBack: {defaultValue: 0, min: -0.95, max: 0.95, step: 0.01},
 delay: {defaultValue: 0, min: 0, max: 1, step: 0.00001}
 }; // constraints
 
@@ -171,8 +171,31 @@ set highFrequency (value) {this.high.frequency.value = value;}
 set highQ (value) {this.high.Q.value = value;}
 set highGain(value) {this.high.gain.value = value;}
 set highType (value) {this.high.type = value;}
-
 } // class Xtc
+
+export class Player extends AudioComponent {
+constructor (audio, media) {
+super (audio, "player");
+this.input = null;
+this.source = (media instanceof HTMLMediaElement)? audio.createMediaElementSource(media) : createBufferSource(media);
+this.source.connect(this.output);
+this._media = media;
+} // constructor
+
+get hasMediaElement () {return this._media instanceof HTMLMediaElement;}
+
+get media () {return this.hasMediaElement? this._media.src : null;}
+
+set media (value) {if (this.hasMediaElement) this._media.src = value;}
+
+get play () {return this.hasMediaElement? !this._media.paused : false;}
+set play (value) {if (this.hasMediaElement) value? this._play() : this._pause();}
+
+
+_play () {if (this.hasMediaElement) this._media.play();}
+_pause () {if (this.hasMediaElement) this._media.pause();}
+
+} // class Player
 
 export class Destination extends AudioComponent {
 constructor (audio) {
@@ -248,10 +271,6 @@ this.first = first;
 this.last = last;
 this.children = this.components = components;
 
-this._delay = audio.createDelay();
-this._feedBack= audio.createGain();
-this._delay.delayTime.value = 0;
-this._feedBack.gain.value = 0;
 
 if(first.input) {
 this.input.connect(first.input);
@@ -276,38 +295,10 @@ console.log(`- connected ${c.name} to ${next.name}`);
 } // if
 
 if (last.output) {
-last.output.connect(this._delay).connect(this._feedBack).connect(first.input);
-
+last.output.connect(this.wet);
 console.log(`- connected ${last.name} to ${this.name} wet`);
-this.delayBeforeOutput = false;
-
 } // if
-
-
 } // constructor
-
-
-
-get feedBack () {return this._feedBack.gain.value;}
-get delay () {return this._delay.delayTime.value;}
-get delayBeforeOutput () {return this._delayBeforeOutput;}
-
-set feedBack(value) {this._feedBack.gain.value = clamp(value, -0.998, 0.998);}
-set delay (value) {this._delay.delayTime.value = value;}
-
-set delayBeforeOutput (value) {
-if (value) {
-this.last.output.disconnect();
-this.last.connect(this._delay);
-this._delay.connect(this.wet);
-this._delay.connect(this._feedBack);
-} else {
-this._delay.disconnect();
-this.last.output.connect(this.wet);
-this._delay.connect(this._feedBack);
-} // if
-this._delayBeforeOutput = value;
-} // delayBeforeOutput
 } // class Series
 
 export class Parallel extends AudioComponent {
@@ -467,3 +458,14 @@ ui.container.appendChild(ui.string({name: property}));
 } // if
 }); // forEach
 } // createFields
+
+export function createBufferSource (buffer) {
+if (buffer instanceof AudioBuffer) {
+const source = audioContext.createBufferSource();
+source.buffer = buffer;
+return source;
+} else {
+console.error("createBufferSource: first argument must be a audio buffer", buffer);
+return null;
+} // if
+} // createBufferSource

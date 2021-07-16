@@ -97,7 +97,7 @@ control.insertAdjacentHTML("afterBegin", html);
 throw new Error(`createControl: invalid markup - ${e}`);
 } // catch
 
-control.hidden = true;
+//control.hidden = true;
 control.className = `${dataType.name.toLowerCase()} field ${name}`;
 control.dataset.dataType = dataType.name;
 
@@ -165,12 +165,14 @@ export function getValue (element) {
 return element instanceof HTMLButtonElement? getState(element) : element.value;
 } // getValue
 
-export function setValue (element, value) {
+export function setValue (element, value, fireChangeEvent) {
 if (element instanceof HTMLButtonElement) {
 setState(element, value);
 } else {
 element.value = value;
 } // if
+
+if (fireChangeEvent) element.dispatchEvent(new CustomEvent("change", {bubbles: true}));
 } // setValue
 
 
