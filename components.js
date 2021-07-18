@@ -1,3 +1,4 @@
+import {union, intersection, difference} from "./setops.js";
 import {Control, update, setValue} from "./binder.js";
 import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
@@ -93,8 +94,15 @@ return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquad
 } // filter
 
 export function panner (options) {
-return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createPanner()));
-} // filter
+const component = applyFieldInitializer(options, wrapWebaudioNode(audioContext.createPanner()));
+Object.defineProperty(component, "channelCount", {
+get() {return component.webaudioNode.channelCount;},
+set(value) {component.webaudioNode.channelCount = value;}
+});
+
+createFields(component, component.ui, ["channelCount"]);
+return component;
+} // panner
 
 export function delay(options) {
 const component = new Delay(audioContext);
@@ -168,35 +176,58 @@ return applyFieldInitializer(options, component);
 function applyFieldInitializer (fd, component) {
 if (!fd) return component;
 
+const initialized = new Set();
+const hide = new Set();
+const show = new Set();
+const all = new Set();
 const container = component.ui.container;
-const descriptors = typeof(fd) === "string" || (fd instanceof String)?
-parseFieldDescriptor(fd) : fd;
+const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFieldDescriptor(fd) : fd)
+.filter(d => d.name)
+.filter(d => {
+if (d.name === "hide") {
+addValues(hide, trimValues(d.defaultValue.split(",")));
+return false;
+} else if (d.name === "show") {
+addValues(show, trimValues(d.defaultValue.split(",")));
+return false;
+} else {
+return true;
+} // if
+});
+console.error("descriptors: ", descriptors);
 
-const initialized = [];
 descriptors.forEach(d => {
-// if multiple semicolons occur in the original string, or if a semi appears at the end, d will be empty so skip 
-if (d.name) {
 console.debug("initializer: ", d);
 const {name, defaultValue, automation} = d;
-const element = container.querySelector(`[data-name=${name}`);
+const element = getElement(name, container);
 
 if (element) {
+initialized.add(name);
+
 if (defaultValue.length > 0) setValue(element, defaultValue);
 if (element instanceof HTMLInputElement && (element.type === "number" || element.type === "range")) element.dataset.automation = automation;
-initialized.push(element.closest(".field"));
 console.debug("descriptor: ", name, defaultValue, element);
 } else {
 throw new Error(`field ${name} not found in ${container.className}`);
 } // if
-} // if
 }); // forEach
 
-/*container.querySelectorAll(".field").forEach(f => f.hidden = true);
-initialized.forEach(f => f.hidden = false);
-console.log(`${container.className}: ${initialized.length} fields initialized.`);
-*/
+console.error("hide: ", hide,
+"show: ", show,
+"initialized: ", initialized
+);
+
+difference(
+union(initialized, AudioComponent.sharedParameterNames),
+hide
+).forEach(name => getElement(name, container).closest(".field").hidden = false);
+
 
 return component;
+
+function addValues (s, values) {
+values.forEach(x => s.add(x));
+} // addValues
 } // applyFieldInitializer
 
 
@@ -292,3 +323,8 @@ status.setAttribute("aria-atomic", "true");
 status.textContent = text;
 } // if
 } // statusMessage
+
+function trimValues(a) {return a.map(x => x.trim());}
+
+function getElement (name, container = document) {return container.querySelector(`[data-name=${name}]`);}
+

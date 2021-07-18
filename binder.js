@@ -17,13 +17,13 @@ return null;
 } // if
 this.receiver = receiver;
 this.label = label;
-this.container = document.createElement("div");
+this.container = document.createElement("fieldset");
 //this.container.setAttribute("role", "main");
 //this.container.setAttribute("aria-roledescription", "component");
 //this.container.setAttribute("aria-label", label);
 this.container.className = `component ${label}`;
 this.container.innerHTML = `
-<div class="component-title" role="heading">${label}</div>
+<legend><div class="component-title" role="heading">${label}</div></legend>
 `;
 
 this.container.addEventListener("change", createUpdateHandler(this));
@@ -81,8 +81,8 @@ return createControl(receiver, name, dataType, defaultValue,
 type="${controlType}"
 data-name="${name}"
 value="${dataType(defaultValue)}"
-min="${min}" max="${max}" step="${step}"
-></label>
+min="${min}" max="${max}" step="${step}">
+</label>
 `);
 } // number
 
@@ -97,7 +97,7 @@ control.insertAdjacentHTML("afterBegin", html);
 throw new Error(`createControl: invalid markup - ${e}`);
 } // catch
 
-//control.hidden = true;
+control.hidden = true;
 control.className = `${dataType.name.toLowerCase()} field ${name}`;
 control.dataset.dataType = dataType.name;
 
