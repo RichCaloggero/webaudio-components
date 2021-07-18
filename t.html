@@ -22,7 +22,7 @@ const media = document.querySelector("audio");
 
 document.body.appendChild(audio.app("",
 audio.series("hide=mix, bypass, silentBypass",
-window.player = audio.player(media),
+window.player = audio.player("show=media, play, position"),
 window.panner = audio.panner("panningModel=HRTF; maxDistance=100; refDistance=10; orientationX=0"),
 window.xtc = audio.xtc("mix=0.3; feedback=0.82; delay=0.00009; gain=-2; lowType=lowShelf; lowGain=-20; lowFrequency=500; lowQ=.26; midType=bandpass; midFrequency=950; midQ=.6; highType=peaking; highFrequency=8000; highGain=-15; highQ=.6"),
 audio.destination()

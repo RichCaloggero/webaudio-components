@@ -45,13 +45,13 @@ return ui.container;
 
 /// wrapped webaudio nodes
 
-export function player (media, options) {
-const component = new Player(audioContext, media);
+export function player (options) {
+const component = new Player(audioContext);
 
 const ui = new Control(component, "player");
 createFields(
 component, ui,
-["media", "play", "pause", "position"]
+["media", "play", "position"]
 ); // createFields
 
 const position = ui.container.querySelector("[data-name=position]");
@@ -176,30 +176,35 @@ return applyFieldInitializer(options, component);
 function applyFieldInitializer (fd, component) {
 if (!fd) return component;
 
+const container = component.ui.container;
 const initialized = new Set();
 const hide = new Set();
 const show = new Set();
-const all = new Set();
-const container = component.ui.container;
+
 const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFieldDescriptor(fd) : fd)
 .filter(d => d.name)
-.filter(d => {
-if (d.name === "hide") {
-addValues(hide, trimValues(d.defaultValue.split(",")));
-return false;
-} else if (d.name === "show") {
-addValues(show, trimValues(d.defaultValue.split(",")));
-return false;
-} else {
-return true;
-} // if
-});
-console.error("descriptors: ", descriptors);
+.filter(add(hide, "hide"))
+.filter(add(show, "show"))
+.forEach(initialize);
 
-descriptors.forEach(d => {
+console.error("hide: ", hide,
+"show: ", show,
+"initialized: ", initialized
+);
+
+[...difference(
+union(union(initialized, show), AudioComponent.sharedParameterNames),
+hide
+)].map(name => getField(name, container))
+.filter(field => field)
+.forEach(field => field.hidden = false); // forEach
+
+return component;
+
+function initialize (d) {
 console.debug("initializer: ", d);
 const {name, defaultValue, automation} = d;
-const element = getElement(name, container);
+const element = getInteractiveElement(name, container);
 
 if (element) {
 initialized.add(name);
@@ -210,24 +215,28 @@ console.debug("descriptor: ", name, defaultValue, element);
 } else {
 throw new Error(`field ${name} not found in ${container.className}`);
 } // if
-}); // forEach
+} // initialize
 
-console.error("hide: ", hide,
-"show: ", show,
-"initialized: ", initialized
-);
-
-difference(
-union(initialized, AudioComponent.sharedParameterNames),
-hide
-).forEach(name => getElement(name, container).closest(".field").hidden = false);
-
-
-return component;
+function add (set, name) {
+return d => {
+if (d.name === name) {
+addValues(set,
+trimValues(
+d.defaultValue.split(",")
+) // trimValues
+); // addValues
+return false;
+} else {
+return true;
+} // if
+} // function
+} // add
 
 function addValues (s, values) {
 values.forEach(x => s.add(x));
 } // addValues
+
+
 } // applyFieldInitializer
 
 
@@ -326,5 +335,6 @@ status.textContent = text;
 
 function trimValues(a) {return a.map(x => x.trim());}
 
-function getElement (name, container = document) {return container.querySelector(`[data-name=${name}]`);}
+function getInteractiveElement (name, container = document) {return container.querySelector(`[data-name=${name}]`);}
+function getField (name, container) {return getInteractiveElement(name, container)?.closest(".field");}
 
