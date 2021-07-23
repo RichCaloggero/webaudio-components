@@ -3,42 +3,49 @@ import {Control, update, setValue} from "./binder.js";
 import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
+import {addAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval} from "./automation.js";
 
 /// root (top level UI)
 
-export function app (options, component) {
+export function app (options, child) {
 if (arguments.length === 1) {
-component = arguments[0];
+child = arguments[0];
 options = "";
 } else if (arguments.length !== 2) {
 alert ("app: must have either 1 or 2 arguments");
 return;
 } // if
 
-const app = {
-children: [component],
-enableAutomation: false,
-automationRate: 0.1,
-automationType: "ui"
-}; // app
-const ui = new Control(app, "App");
+const component = {
+children: [child],
+automationType: "ui",
+
+get automationInterval () {return getAutomationInterval();},
+set automationInterval (value) {setAutomationInterval(value);},
+ 
+get enableAutomation () {return isAutomationEnabled();},
+set enableAutomation(value) {value? enableAutomation() : disableAutomation();},
+}; // component
+
+const ui = new Control(component, "App");
 ui.container.insertAdjacentHTML("afterBegin", '<div role="status" aria-atomic="true" aria-label="status" class="status"></div>\n');
 ui.container.classList.add("root");
 
 createFields(
-app, ui,
-["enableAutomation", "automationRate", "automationType"]
+component, ui,
+["enableAutomation", "automationInterval", "automationType"]
 ); // createFields
 
-app.ui = ui;
-setDepth(ui.container, 1);
-buildDom(component, ui.container);
+component.ui = ui;
+
+buildDom(component);
 
 ui.container.addEventListener ("keydown", numericFieldKeyboardHandler);
 ui.container.querySelectorAll("input, button").forEach(x => update(x));
 setTimeout(() => statusMessage("Ready."), 10); // give time for dom to settle
 
 ui.component = app;
+applyFieldInitializer(options, component);
 return ui.container;
 } // app
 
@@ -80,10 +87,7 @@ export function reverseStereo (options) {
 const component = new ReverseStereo (audioContext);
 const ui = new Control(component, "reverseStereo");
 
-createFields(
-component, ui,
-AudioComponent.sharedParameterNames
-); // createFields
+createFields(component, ui, AudioComponent.sharedParameterNames);
 
 component.ui = ui;
 return applyFieldInitializer(options, component);
@@ -95,12 +99,6 @@ return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquad
 
 export function panner (options) {
 const component = applyFieldInitializer(options, wrapWebaudioNode(audioContext.createPanner()));
-Object.defineProperty(component, "channelCount", {
-get() {return component.webaudioNode.channelCount;},
-set(value) {component.webaudioNode.channelCount = value;}
-});
-
-createFields(component, component.ui, ["channelCount"]);
 return component;
 } // panner
 
@@ -146,11 +144,7 @@ const options = children[0] instanceof AudioComponent?
 const component = new Series (audioContext, children);
 component.type = "container";
 const ui = new Control(component, "series");
-createFields(
-component, ui,
-["bypass", "silentBypass", "mix", "feedBack", "delay", "delayBeforeOutput"]
-); // createFields
-
+createFields(component, ui, AudioComponent.sharedParameterNames);
 
 component.ui = ui;
 return applyFieldInitializer(options, component);
@@ -162,10 +156,7 @@ const options = children[0] instanceof AudioComponent?
 const component = new Parallel(audioContext, children);
 component.type = "container";
 const ui = new Control(component, "parallel");
-createFields(
-component, ui,
-["bypass", "silentBypass", "mix"]
-); // createFields
+createFields(component, ui, AudioComponent.sharedParameterNames);
 
 component.ui = ui;
 return applyFieldInitializer(options, component);
@@ -187,31 +178,39 @@ const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFie
 .filter(add(show, "show"))
 .forEach(initialize);
 
-console.error("hide: ", hide,
+/*console.error("hide: ", hide,
 "show: ", show,
 "initialized: ", initialized
 );
+*/
 
-[...difference(
+const fieldsToShow = [...difference(
 union(union(initialized, show), AudioComponent.sharedParameterNames),
 hide
 )].map(name => getField(name, container))
-.filter(field => field)
-.forEach(field => field.hidden = false); // forEach
+.filter(field => field);
+
+if (fieldsToShow.length === 0 && component.type === "container") {
+container.querySelector(".component-title").hidden = true;
+container.setAttribute("role", "presentation");
+} else {
+fieldsToShow.forEach(field => field.hidden = false); // forEach
+} // if
 
 return component;
 
 function initialize (d) {
-console.debug("initializer: ", d);
-const {name, defaultValue, automation} = d;
+//console.debug("initializer: ", d);
+const {name, defaultValue, automator} = d;
 const element = getInteractiveElement(name, container);
 
 if (element) {
 initialized.add(name);
 
 if (defaultValue.length > 0) setValue(element, defaultValue);
-if (element instanceof HTMLInputElement && (element.type === "number" || element.type === "range")) element.dataset.automation = automation;
-console.debug("descriptor: ", name, defaultValue, element);
+if (automator) addAutomation(element, automator);
+
+//console.debug("descriptor: ", name, defaultValue, element);
 } else {
 throw new Error(`field ${name} not found in ${container.className}`);
 } // if
@@ -240,14 +239,18 @@ values.forEach(x => s.add(x));
 } // applyFieldInitializer
 
 
-function buildDom(root, dom, depth = 1) {
-const container = root.ui.container;
-container.insertAdjacentHTML("afterBegin", '<hr role="presentation">');
-container.insertAdjacentHTML("beforeEnd", `<hr hidden class="end-marker" aria-roledescription="end ${root.ui.label}">`);
-dom.appendChild(container);
-if (root.children) depth += 1;
-setDepth(container, depth);
-if (root.children) root.children.forEach(child => buildDom(child, container, depth));
+function buildDom(component, depth = 1) {
+const dom = component.ui.container;
+setDepth(dom, depth);
+//console.debug("build: ", depth, dom);
+if (component.children) component.children.forEach(child => {
+//console.debug("- appending ", child.ui.container);
+dom.appendChild(child.ui.container);
+buildDom(
+child,
+dom.getAttribute("role") !== "presentation"? depth+1 : depth
+); // buildDom
+}); // forEach child
 } // buildDom
 
 function setDepth (container, depth) {
@@ -311,12 +314,11 @@ function increase10 (input, value) {input.value = value + 10*Number(input.step);
 function increase50 (input, value) {input.value = value + 50*Number(input.step);}
 function decrease10 (input, value) {input.value = value - 10*Number(input.step);}
 function decrease50 (input, value) {input.value = value - 50*Number(input.step);}
-
  } // numericFieldKeyboardHandler
 
 
 const messageQueue = [];
-function statusMessage (text, append, ignoreQueue) {
+export function statusMessage (text, append, ignoreQueue) {
 const status = document.querySelector(".root .status, #status");
 if (!status) {
 messageQueue.push(text);
@@ -337,4 +339,5 @@ function trimValues(a) {return a.map(x => x.trim());}
 
 function getInteractiveElement (name, container = document) {return container.querySelector(`[data-name=${name}]`);}
 function getField (name, container) {return getInteractiveElement(name, container)?.closest(".field");}
+function getAllFields(container = document) {return [...container.querySelectorAll(".field")];}
 

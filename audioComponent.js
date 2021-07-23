@@ -4,7 +4,7 @@ export let audioContext = new AudioContext();
 
 await audioContext.resume();
 await audioContext.audioWorklet.addModule("./xtc.worklet.js");
-console.debug("AudioComponent module ready.");
+console.log("audioWorklet.xtc created.");
 
 // registry helps generate id strings
 const registry = new Map();
@@ -20,12 +20,14 @@ let errorVerbosity = 0;
 export class AudioComponent {
 static sharedParameterNames = ["bypass", "silentBypass", "mix"];
 static constraints = {
-Q: {min: -20, max: 20, defaultValue: 1, step: 0.01},
+Q: {min: -20, max: 20, step: 0.01},
 frequency: {min: 20, max: 20000, step: 10},
 coneInnerAngle: {min: 0, max: 360, step: 1},
 coneOuterAngle: {min: 0, max: 360, step: 1},
 mix: {defaultValue: 1, min: -1, max: 1, step: 0.01},
-//gain: {defaultValue: 1, min: -100, max: 100, step: 0.1},
+channelCount: {min: 1, max: 2},
+rolloffFactor: {min: 0, step: 0.1},
+gain: {step: 0.02},
 feedBack: {defaultValue: 0, min: -0.95, max: 0.95, step: 0.01},
 delay: {defaultValue: 0, min: 0, max: 1, step: 0.00001}
 }; // constraints
@@ -123,26 +125,22 @@ this.high = audio.createBiquadFilter();
 this.xtc = new AudioWorkletNode(audio, "xtc");
 
 this.input
-.connect(this.low).connect(this.mid).connect(this.high)
+//.connect(this.low).connect(this.mid).connect(this.high)
 .connect(this.xtc).connect(this.wet);
-window._xtc = this.xtc;
-window.xtc = this;
-window.high = this.high;
-window.context = this.audio;
 } // constructor
 
-get reverseStereo () {return this.xtc.reverseStereo !== 0;}
+get reverseStereo () {return this.xtc.parameters.get("reverseStereo").value !== 0;}
 get gain () {return this.xtc.parameters.get("gain").value;}
 get delay () {return this.xtc.parameters.get("delay").value;}
 get feedback () {return this.xtc.parameters.get("feedback").value;}
 
-set reverseStereo (value) {this.xtc.parameters.get("reverseStereo").value = 1;}
+set reverseStereo (value) {this.xtc.parameters.get("reverseStereo").value = Number(value? 1 : 0);}
 set gain (value) {this.xtc.parameters.get("gain").value = value;}
 set delay (value) {this.xtc.parameters.get("delay").value = value;}
 set feedback (value) {this.xtc.parameters.get("feedback").value = value;}
 
 // exposed filter parameters
-get lowFrequency () {return this.low.frequency.value;}
+/*get lowFrequency () {return this.low.frequency.value;}
 get lowQ () {return this.low.Q.value;}
 get lowGain() {return this.low.frequency.value;}
 get lowType() {return this.low.type;}
@@ -154,7 +152,7 @@ get midType() {return this.mid.type;}
 
 get highFrequency () {return this.high.frequency.value;}
 get highQ () {return this.high.Q.value;}
-get highGain() {return this.high.frequency.value;}
+get highGain() {return this.high.gain.value;}
 get highType() {return this.high.type;}
 
 set lowFrequency (value) {this.low.frequency.value = value;}
@@ -171,6 +169,7 @@ set highFrequency (value) {this.high.frequency.value = value;}
 set highQ (value) {this.high.Q.value = value;}
 set highGain(value) {this.high.gain.value = value;}
 set highType (value) {this.high.type = value;}
+*/
 } // class Xtc
 
 export class Player extends AudioComponent {
@@ -411,7 +410,7 @@ object[name].value : object[name];
 } // _get
 
 function _set (object, name, value) {
-console.debug(`_set: ${object}, ${name}, ${value}`);
+//console.debug(`_set: ${object}, ${name}, ${value}`);
 if (object && name) {
 isAudioParam(object, name)?
 object[name].value  = value : object[name] = value;
@@ -424,7 +423,7 @@ function webaudioParameterNames (node, _exclude = []) {
 const excludedParameterNames = [
 "context",
 "numberOfInputs", "numberOfOutputs",
-"channelCount", "channelCountMode", "channelInterpretation",
+"channelCountMode", "channelInterpretation",
 "addEventListener", "removeEventListener"
 ];
 const names = [];

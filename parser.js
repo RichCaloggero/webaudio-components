@@ -5,8 +5,8 @@ return splitOnSemi(s).map(d => createDescriptor(d));
 
 function createDescriptor (s) {
 const [name, value] = splitOnEquals(s);
-const [defaultValue, automation] = splitOnBar(value);
-return {name, defaultValue, automation, value};
+const [defaultValue, automator] = splitOnBar(value);
+return {name, defaultValue, automator, value};
 } // createDescriptor
 
 

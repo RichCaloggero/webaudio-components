@@ -1,3 +1,40 @@
+import {setValue} from "./binder.js";
+import {audioContext} from "./audioComponent.js";
+
+await audioContext.audioWorklet.addModule("./automator.worklet.js");
+console.log("audioWorklet.automator created.");
+const automator = new AudioWorkletNode(audioContext, "automator");
+
+window.automationData = Object.create(Math);
+const automationQueue = new Map();
+let _automationEnabled = false;
+let _automationInterval = 0.1; // seconds
+
+automator.port.onmessage = e => {
+if (_automationEnabled) {
+const message = e.data;
+
+if (message instanceof Array) {
+// envelope following code here -- make quantities available as variables which can be used by automation functions
+Object.assign(window.automationData, Object.fromEntries(message));
+} else if (message === "tick") {
+_tick();
+} // if
+} // if _automationEnabled
+}; // onmessage
+
+export function addAutomation (element, text) {
+if (text && text.length > 0 && element instanceof HTMLInputElement && (element.type === "number" || element.type === "range")) {
+automationQueue.set(element, {
+element, text,
+automator: compileFunction(text)
+});
+} // if
+} // addAutomation
+
+function _tick () {
+automationQueue.forEach(e => setValue(e.element, e.automator(audioContext.currentTime), "change"));
+} // _tick
 
 
 export function compileFunction (text, parameter = "t") {
@@ -27,3 +64,26 @@ app.statusMessage(e);
 return null;
 } // try
 } // compileFunction
+
+export function isAutomationEnabled (value) {return _automationEnabled;}
+
+export function enableAutomation () {
+automator.port.postMessage(["enable", true]);
+_automationEnabled = true;
+} // enableAutomation
+
+export function disableAutomation () {
+automator.port.postMessage(["enable", false]);
+_automationEnabled = false;
+} // disableAutomation
+
+export function getAutomationInterval () {return _automationInterval;}
+
+export function setAutomationInterval (value) {
+value = Number(value);
+if (value && value > 0) {
+automator.port.postMessage(["automationInterval", value]);
+_automationInterval = value;
+} // if
+} // setAutomationInterval
+

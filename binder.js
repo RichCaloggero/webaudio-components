@@ -17,13 +17,13 @@ return null;
 } // if
 this.receiver = receiver;
 this.label = label;
-this.container = document.createElement("fieldset");
-//this.container.setAttribute("role", "main");
+this.container = document.createElement("div");
+this.container.setAttribute("role", "region");
 //this.container.setAttribute("aria-roledescription", "component");
-//this.container.setAttribute("aria-label", label);
+this.container.setAttribute("aria-label", label);
 this.container.className = `component ${label}`;
 this.container.innerHTML = `
-<legend><div class="component-title" role="heading">${label}</div></legend>
+<div  class="component-title" role="heading">${label}</div>
 `;
 
 this.container.addEventListener("change", createUpdateHandler(this));
@@ -120,7 +120,7 @@ const name = element.dataset.name;
 const dataType = Control.dataTypeMap.get(element.closest(".field").dataset.dataType);
 const value = getValue(element);
 if (nullish(value)) return;
-console.debug("in change handler: ", element.tagName, name, dataType, value );
+//console.debug("in change handler: ", element.tagName, name, dataType, value );
 
 if (receiver[name] instanceof Function) receiver[name].call(receiver, dataType(value));
 else updateValue(receiver, name, dataType(value));
@@ -129,7 +129,7 @@ else updateValue(receiver, name, dataType(value));
 
 
 function updateValue (receiver, property, value) {
-console.debug("updateValue: ", receiver instanceof AudioNode? " AudioNode " : " AudioComponent ", receiver.name || receiver.label, property, value);
+//console.debug("updateValue: ", receiver instanceof AudioNode? " AudioNode " : " AudioComponent ", receiver.name || receiver.label, property, value);
 if (property instanceof Function) property.call(receiver, value);
 else receiver[property] = value;
 } // updateValue

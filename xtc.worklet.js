@@ -62,7 +62,6 @@ const inputBuffer = inputs[0];
 const outputBuffer = outputs[0];
 const channelCount = inputBuffer.length;
 //console.debug("reverse: ", reverseStereo, chan(0));
-//return false;
 
 if (channelCount > 2) {
 console.error("channel count must be <= 2");
@@ -85,14 +84,6 @@ for (let channel = 0; channel < channelCount; channel++) {
 const sampleCount = inputBuffer[channel].length;
 
 for (let i=0; i<sampleCount; i++) {
-/*if (debug && loopCount <= 0) {
-console.debug("Done .");
-done = true;
-return false;
-} // if
-if (debug) loopCount -= 1;
-*/
-
 const sample = inputBuffer[channel][i];
 this.last[channel][1] = this.last[channel][0];
 this.last[channel][0] = sample;
@@ -104,7 +95,6 @@ writeOutputSample(channel, i, gain * sample);
 const delayedSample = this.getDelayedSample(channel, dx, sample);
 //if (debug) console.debug(`read sample ${i}, length is ${this.bufferLength(channel)}`);
 this.writeBuffer(channel, sample + feedback*delayedSample);
-//this.ibufInsert(channel, sample + feedback*delayedSample);
 //if (debug) console.debug(`wrote sample ${i}, length ${this.bufferLength(channel)}`);
 
 writeOutputSample(channel, i, 0.5 * gain * (delayedSample));

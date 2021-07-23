@@ -18,34 +18,38 @@ import * as audio from "./components.js";
 import * as setop from "./setops.js";
 import {getValue, setValue} from "./binder.js";
 
+const commonOptions = "bypass, silentBypass, mix";
 const media = document.querySelector("audio");
 
-document.body.appendChild(audio.app("",
+document.body.appendChild(audio.app("enableAutomation; automationInterval=0.1",
 audio.series("hide=mix, bypass, silentBypass",
-window.player = audio.player("show=media, play, position"),
-window.panner = audio.panner("panningModel=HRTF; maxDistance=100; refDistance=10; orientationX=0"),
-window.xtc = audio.xtc("mix=0.3; feedback=0.82; delay=0.00009; gain=-2; lowType=lowShelf; lowGain=-20; lowFrequency=500; lowQ=.26; midType=bandpass; midFrequency=950; midQ=.6; highType=peaking; highFrequency=8000; highGain=-15; highQ=.6"),
+window.player = audio.player("show=media, play, position; media=t.opus"),
+window.panner = audio.panner(`
+positionX=0 | 10*cos(t); positionZ=0 | 10*sin(t);
+channelCount=1; panningModel=HRTF; maxDistance=100; refDistance=50; rolloffFactor=0.3; orientationX=0;
+hide=orientationX, orientationY, orientationZ, coneInnerAngle, coneOuterAngle;
+`),
+createXtc(),
 audio.destination()
 ) // series
 )); // audio.app
 
-const p = panner.webaudioNode;
-p.channelCount = 1;
-let a = 0;
-setInterval(() => {
-const r = Number(getValue(document.querySelector("#r")));
-const dA = Number(getValue(document.querySelector("#delta-angle")));
+function createXtc () {
+return audio.series("hide=silentBypass; mix=1",
+createBand("type=highpass; frequency=500; Q=0.26; gain=1"),
+createBand("bandpass", 950, .66, 2),
+//createBand("highshelf", 8000, .26, -15),
+window.xtc = audio.xtc("delay=0.00007; feedback=0.9; reverseStereo=1; gain=-1"),
+createBand(1000; gain=1"),
+); // series
+} // createXtc
 
-const x = document.querySelector("[data-name=positionX]");
-const y = document.querySelector("[data-name=positionY]");
-const z = document.querySelector("[data-name=positionZ]");
-
-setValue(x, r * Math.cos(a), "change");
-//setValue(y, r * Math.sin(a + Math.PI/4), "change");
-setValue(z, r * Math.sin(a), "change");
-
-a += dA;
-}, 50);
+function createBand (options) {
+return audio.series(`hide=${commonOptions}`,
+audio.filter(`hide=${commonOptions}, detune; ${options}`),
+audio.gain(`hide=${commonOptions}; gain=${gain}`)
+); // series
+} // createBand
 
 </script>
 
