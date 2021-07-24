@@ -6,11 +6,6 @@
 </head>
 <body> 
 
-<div>
-<br><label>radius: <input type="number" id="r" value="1"></label>
-<label>delta angle: <input type="number" id="delta-angle" value=".1"></label>
-</div>
-
 
 <script type="module">
 import {AudioComponent, audioContext} from "./audioComponent.js";
@@ -25,7 +20,7 @@ document.body.appendChild(audio.app("enableAutomation; automationInterval=0.1",
 audio.series("hide=mix, bypass, silentBypass",
 window.player = audio.player("show=media, play, position; media=t.opus"),
 window.panner = audio.panner(`
-positionX=0 | 10*cos(t); positionZ=0 | 10*sin(t);
+positionX=0; positionZ=0; radius=1; angle=${Math.PI/2} | 0.1*t;
 channelCount=1; panningModel=HRTF; maxDistance=100; refDistance=50; rolloffFactor=0.3; orientationX=0;
 hide=orientationX, orientationY, orientationZ, coneInnerAngle, coneOuterAngle;
 `),
@@ -37,17 +32,15 @@ audio.destination()
 function createXtc () {
 return audio.series("hide=silentBypass; mix=1",
 createBand("type=highpass; frequency=500; Q=0.26; gain=1"),
-createBand("bandpass", 950, .66, 2),
-//createBand("highshelf", 8000, .26, -15),
-window.xtc = audio.xtc("delay=0.00007; feedback=0.9; reverseStereo=1; gain=-1"),
-createBand(1000; gain=1"),
+window.xtc = audio.xtc("delay=0.00007; feedback=0.95; reverseStereo=1; gain=-1"),
+createBand("frequency=1000; gain=1"),
 ); // series
 } // createXtc
 
 function createBand (options) {
 return audio.series(`hide=${commonOptions}`,
 audio.filter(`hide=${commonOptions}, detune; ${options}`),
-audio.gain(`hide=${commonOptions}; gain=${gain}`)
+audio.gain(`hide=${commonOptions}; gain=1`)
 ); // series
 } // createBand
 

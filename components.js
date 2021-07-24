@@ -98,8 +98,33 @@ return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquad
 } // filter
 
 export function panner (options) {
-const component = applyFieldInitializer(options, wrapWebaudioNode(audioContext.createPanner()));
-return component;
+const component = wrapWebaudioNode(audioContext.createPanner());
+
+
+component._radius = component._angle = 0;
+Object.defineProperty(component, "radius", {
+get () {return this._radius;},
+set (value) {
+const p = this.webaudioNode;
+this._radius = Number(value);
+p.positionX.value = this._radius*Math.cos(this._angle);
+p.positionZ.value = this._radius*Math.sin(this._angle);
+} // set
+}); // defineProperty
+
+Object.defineProperty(component, "angle", {
+get () {return this._angle;},
+set (value) {
+const p = this.webaudioNode;
+this._angle = Number(value);
+p.positionX.value = this._radius*Math.cos(this._angle);
+p.positionZ.value = this._radius*Math.sin(this._angle);
+} // set
+}); // defineProperty
+
+createFields(component, component.ui, ["radius", "angle"]);
+
+return applyFieldInitializer(options, component);
 } // panner
 
 export function delay(options) {
@@ -165,6 +190,7 @@ return applyFieldInitializer(options, component);
 /// helpers
 
 function applyFieldInitializer (fd, component) {
+fd = fd.trim();
 if (!fd) return component;
 
 const container = component.ui.container;
@@ -174,13 +200,16 @@ const show = new Set();
 
 const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFieldDescriptor(fd) : fd)
 .filter(d => d.name)
-.filter(add(hide, "hide"))
-.filter(add(show, "show"))
-.forEach(initialize);
+.filter(d => (
+d.name === "hide")? (add(hide, d.defaultValue), false) : true
+).filter(d => (d.name === "show")?
+(add(show, d.defaultValue), false) : true
+).forEach(initialize);
 
-/*console.error("hide: ", hide,
+/*console.debug("component: ", component,
+	"hide: ", hide,
 "show: ", show,
-"initialized: ", initialized
+//"initialized: ", initialized
 );
 */
 
@@ -189,10 +218,14 @@ union(union(initialized, show), AudioComponent.sharedParameterNames),
 hide
 )].map(name => getField(name, container))
 .filter(field => field);
+console.debug("fieldsToShow: ", component.name, container.label, fieldsToShow);
 
-if (fieldsToShow.length === 0 && component.type === "container") {
+if (fieldsToShow.length === 0) {
+if (component.type === "container") {
 container.querySelector(".component-title").hidden = true;
 container.setAttribute("role", "presentation");
+} // if
+
 } else {
 fieldsToShow.forEach(field => field.hidden = false); // forEach
 } // if
@@ -216,6 +249,11 @@ throw new Error(`field ${name} not found in ${container.className}`);
 } // if
 } // initialize
 
+function add (set, values) {
+addValues(set, trimValues(values.split(",")));
+} // add
+
+/*-delete
 function add (set, name) {
 return d => {
 if (d.name === name) {
@@ -230,6 +268,7 @@ return true;
 } // if
 } // function
 } // add
+*/
 
 function addValues (s, values) {
 values.forEach(x => s.add(x));
@@ -275,17 +314,21 @@ const element = e.target;
 
 if (key in commands && element.tagName.toLowerCase() === "input" && (element.type === "number" || element.type === "range")) {
 e.preventDefault();
+e.stopPropagation();
 execute(commands[key], element, Number(element.value));
 } // if
 
 function execute (command, element, value) {
-if (commands[key]) commands[key](element, Number(element.value));
+command(element, value);
+
 if (element.validationMessage) {
 statusMessage(element.validationMessage);
-element.value = Number(value);
+element.value = value;
 } else {
 update(element);
 } // if
+
+return true;
 } // execute
 
 function save (element, value) {

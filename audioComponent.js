@@ -22,6 +22,7 @@ static sharedParameterNames = ["bypass", "silentBypass", "mix"];
 static constraints = {
 Q: {min: -20, max: 20, step: 0.01},
 frequency: {min: 20, max: 20000, step: 10},
+angle: {step: .02},
 coneInnerAngle: {min: 0, max: 360, step: 1},
 coneOuterAngle: {min: 0, max: 360, step: 1},
 mix: {defaultValue: 1, min: -1, max: 1, step: 0.01},
