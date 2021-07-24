@@ -20,7 +20,7 @@ document.body.appendChild(audio.app("enableAutomation; automationInterval=0.1",
 audio.series("hide=mix, bypass, silentBypass",
 window.player = audio.player("show=media, play, position; media=t.opus"),
 window.panner = audio.panner(`
-positionX=0; positionZ=0; radius=1; angle=${Math.PI/2} | 0.1*t;
+positionX=0; positionZ=0; radius=1; angle=${(Math.PI/2).toFixed(1)};
 channelCount=1; panningModel=HRTF; maxDistance=100; refDistance=50; rolloffFactor=0.3; orientationX=0;
 hide=orientationX, orientationY, orientationZ, coneInnerAngle, coneOuterAngle;
 `),

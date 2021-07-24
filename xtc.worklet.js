@@ -1,7 +1,4 @@
 let loopCount = null;
-//const debug = typeof(loopCount) === "number";
-const debug = true;
-let done = false;
 
 class Xtc extends AudioWorkletProcessor {
 static interpolationTypes = ["none", "linear", "cubic"];
@@ -69,16 +66,16 @@ return false;
 } // if
 
 if (delay > 0 && delay !== this.delay) {
-console.debug(`dx: ${dx}`);
+//console.debug(`dx: ${dx}`);
 this.delay = this.allocate(this.fractionalDelay < 1? 1 : delay);
-console.debug(`allocated ${this.delay}, lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
+//console.debug(`allocated ${this.delay}, lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
 } else if (delay === 0 && this.delayBuffer[0] !== null) {
 this.initializeDelayBuffer();
-if (debug) console.debug("deallocated buffers");
+//console.debug("deallocated buffers");
 } // if
 
 if (channelCount > 0) {
-//if (debug) console.debug(`frame ${this.blockCount++}, delay ${delay}, ${this.delay}, ${delayLength}`);
+//console.debug(`frame ${this.blockCount++}, delay ${delay}, ${this.delay}, ${delayLength}`);
 
 for (let channel = 0; channel < channelCount; channel++) {
 const sampleCount = inputBuffer[channel].length;
@@ -93,16 +90,15 @@ writeOutputSample(channel, i, gain * sample);
 
 } else {
 const delayedSample = this.getDelayedSample(channel, dx, sample);
-//if (debug) console.debug(`read sample ${i}, length is ${this.bufferLength(channel)}`);
+//console.debug(`read sample ${i}, length is ${this.bufferLength(channel)}`);
 this.writeBuffer(channel, sample + feedback*delayedSample);
-//if (debug) console.debug(`wrote sample ${i}, length ${this.bufferLength(channel)}`);
+//console.debug(`wrote sample ${i}, length ${this.bufferLength(channel)}`);
 
 writeOutputSample(channel, i, 0.5 * gain * (delayedSample));
 } // if
 
 } // loop over samples
 
-//throw new Error("done for now");
 } // loop over channels
 } // if channelCount > 0
 
@@ -132,7 +128,7 @@ readBuffer (channel) {
 if (this.delay === 0 || this.bufferLength(channel) < this.delay) return 0.0;
 
 const sample = this.delayBuffer[channel][this.readIndex[channel]];
-//if (debug) console.debug(`- - got ${sample} at ${this.readIndex[channel]}`);
+//console.debug(`- - got ${sample} at ${this.readIndex[channel]}`);
 this.readIndex[channel] = (this.readIndex[channel] + 1) % this.delay;
 this._bufferLength[channel] -= 1;
 return sample;
@@ -168,20 +164,19 @@ return this._bufferLength[channel];
 } // bufferLength
 
 allocate (count) {
-done = false;
-if (debug) console.debug(`allocating ${count}, bufferLengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
+//console.debug(`allocating ${count}, bufferLengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
 for (let channel=0; channel<2; channel++) {
 const buffer = new Float32Array(count);
 
 if (this.delayBuffer[channel] !== null) {
 // copy from old buffer
 const length = Math.min(count, this.bufferLength(channel));
-if (debug) console.debug(`- copying ${length} for channel ${channel}, bufferLength is ${this.bufferLength(channel)}`);
+//console.debug(`- copying ${length} for channel ${channel}, bufferLength is ${this.bufferLength(channel)}`);
 
 for (let i=0; i < length; i++) {
 buffer[i] = this.delayBuffer[channel][this.readIndex[channel]++ % this._bufferLength[channel]];
 } // for
-if (debug) console.debug(`- copy done, bufferLength is ${this.bufferLength(channel)}`);
+//console.debug(`- copy done, bufferLength is ${this.bufferLength(channel)}`);
 
 this.readIndex[channel] = 0;
 this.writeIndex[channel] = length;
@@ -190,13 +185,13 @@ this._bufferLength[channel] = length;
 } else {
 this.readIndex[channel] = this.writeIndex[channel] = 0;
 this._bufferLength[channel] = 0;
-if (debug) console.debug("- no copy...");
+//console.debug("- no copy...");
 } // if
 
 this.delayBuffer[channel] = buffer;
 } // loop over channels
 
-if (debug) console.debug(`allocation complete; lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
+//console.debug(`allocation complete; lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
 return count;
 } // allocate
 

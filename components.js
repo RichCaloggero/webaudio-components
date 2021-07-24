@@ -3,7 +3,7 @@ import {Control, update, setValue} from "./binder.js";
 import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
-import {addAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval} from "./automation.js";
+import {addAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
 
 /// root (top level UI)
 
@@ -218,7 +218,7 @@ union(union(initialized, show), AudioComponent.sharedParameterNames),
 hide
 )].map(name => getField(name, container))
 .filter(field => field);
-console.debug("fieldsToShow: ", component.name, container.label, fieldsToShow);
+//console.debug("fieldsToShow: ", component.name, container.label, fieldsToShow);
 
 if (fieldsToShow.length === 0) {
 if (component.type === "container") {
@@ -241,7 +241,7 @@ if (element) {
 initialized.add(name);
 
 if (defaultValue.length > 0) setValue(element, defaultValue);
-if (automator) addAutomation(element, automator);
+if (automator) addAutomation(element, automator, compile(automator));
 
 //console.debug("descriptor: ", name, defaultValue, element);
 } else {
@@ -306,6 +306,7 @@ const commands = {
 "control arrowdown": decrease10, "pagedown": decrease50,
 "control -": negate, "control 0": zero,
 "control enter": save, "control space": swap,
+"control shift enter": defineAutomation,
 };
 
 const key = eventToKey(e).join(" ");
@@ -330,6 +331,20 @@ update(element);
 
 return true;
 } // execute
+
+/// commands
+
+function defineAutomation (element) {
+const text = prompt("automator:").trim();
+if (!text) {
+removeAutomation(element);
+statusMessage("Automation removed.");
+return;
+} // if
+
+const _function = compile(text);
+if (_function) addAutomation(element, text, _function);
+} // defineAutomation
 
 function save (element, value) {
 savedValues.set(element, value);
@@ -361,6 +376,7 @@ function decrease50 (input, value) {input.value = value - 50*Number(input.step);
 
 
 const messageQueue = [];
+window.statusMessage = statusMessage;
 export function statusMessage (text, append, ignoreQueue) {
 const status = document.querySelector(".root .status, #status");
 if (!status) {
@@ -384,3 +400,9 @@ function getInteractiveElement (name, container = document) {return container.qu
 function getField (name, container) {return getInteractiveElement(name, container)?.closest(".field");}
 function getAllFields(container = document) {return [...container.querySelectorAll(".field")];}
 
+function compile (text) {
+const _function = compileFunction(text);
+if (_function && _function instanceof Function) return _function;
+statusMessage(`Invalid automation function: ${text}`);
+return false;
+} // compile

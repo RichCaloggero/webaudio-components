@@ -7,6 +7,7 @@ const automator = new AudioWorkletNode(audioContext, "automator");
 
 window.automationData = Object.create(Math);
 const automationQueue = new Map();
+window.automationQueue = automationQueue;
 let _automationEnabled = false;
 let _automationInterval = 0.1; // seconds
 
@@ -23,14 +24,15 @@ _tick();
 } // if _automationEnabled
 }; // onmessage
 
-export function addAutomation (element, text) {
-if (text && text.length > 0 && element instanceof HTMLInputElement && (element.type === "number" || element.type === "range")) {
-automationQueue.set(element, {
+export function addAutomation (element, text, _function) {
+if (_function) automationQueue.set(element, {
 element, text,
-automator: compileFunction(text)
+automator: _function
 });
-} // if
 } // addAutomation
+
+export function removeAutomation (element) {automationQueue.delete(element);} 
+
 
 function _tick () {
 automationQueue.forEach(e => setValue(e.element, e.automator(audioContext.currentTime), "change"));
@@ -38,8 +40,9 @@ automationQueue.forEach(e => setValue(e.element, e.automator(audioContext.curren
 
 
 export function compileFunction (text, parameter = "t") {
+let _function;
 try {
-return new Function (parameter,
+_function = new Function (parameter,
 `with (automationData) {
 function  scale (x, in1,in2, out1,out2) {
 in1 = Math.min(in1,in2);
@@ -56,11 +59,15 @@ function c (x, l=-1.0, u=1.0) {return scale(Math.cos(x), -1,1, l,u);}
 function r(a=0, b=1) {return scale(Math.random(), 0,1, a,b);}
 
 return ${text};
-} // Math
+} // with automationData
 `); // new Function
+_function(0); // test
+return _function;
 
 } catch (e) {
-app.statusMessage(e);
+console.error(`invalid function : ${text};
+${e})
+`);
 return null;
 } // try
 } // compileFunction
