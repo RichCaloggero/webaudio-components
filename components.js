@@ -339,9 +339,13 @@ return true;
 function help (element, value, commands) {
 console.log("command keys: ", Object.keys(commands));
 let message = Object.keys(commands)
-.map(key => `<tr><th>${key}</th> <td> ${commands[key].name || "[no name]"}</td></tr>`);
+.map(key => `<tr><th>${key}</th> <td> ${commands[key].name || "[no name]"}</td></tr>`)
+.join("\n");
 
-displayModal(createModal({description: `<table>${message}</table>`}));
+displayModal(createModal({
+title: "Keyboard help",
+body: `<table><tr><th>key</th><th>command</th></tr>${message}</table>`
+}));
 } // help
 
 function defineAutomation (element) {
@@ -418,8 +422,8 @@ return false;
 function createModal (options) {
 const title = options.title || "modal";
 const id = {
-title: `${title}-title`,
-description: `${name}-description`,
+title: `${removeBlanks(title)}-title`,
+description: `${removeBlanks(title)}-description`,
 }; // id
 
 const modal = document.createElement("div");
@@ -433,7 +437,7 @@ modal.innerHTML =`
 </header>
 <div class="body">
 <div class="description" id="${id.description}">${options.description || ""}</div>
- {options.body || ""}
+ ${options.body || ""}
 </div><!-- body -->
 </div><!-- modal -->
 `; // html
@@ -454,3 +458,5 @@ if (modal.__restoreFocus__) modal.__restoreFocus__.focus();
 document.body.removeChild(modal);
 } // close
 } // displayModal
+
+function removeBlanks (s) {return s.replace(/\s+/g, "");}
