@@ -339,10 +339,9 @@ return true;
 function help (element, value, commands) {
 console.log("command keys: ", Object.keys(commands));
 let message = Object.keys(commands)
-.map(key => `<tr><th>${key}</th> <td> ${commands[key].name || "[no name]"}</td></tr>`)
-.join("<br>\n");
+.map(key => `<tr><th>${key}</th> <td> ${commands[key].name || "[no name]"}</td></tr>`);
 
-displayModal(createModal({description: message}));
+displayModal(createModal({description: `<table>${message}</table>`}));
 } // help
 
 function defineAutomation (element) {
@@ -439,20 +438,19 @@ modal.innerHTML =`
 </div><!-- modal -->
 `; // html
 
-modal.__restoreFocus__ = document.activeElement;
-
 return modal;
 } // createModal
 
 function displayModal (modal) {
 document.body.appendChild(modal);
 
-modal.addEventListener("click", e => e.target.classList.contains("close") && close(element));
+modal.addEventListener("click", e => e.target.classList.contains("close") && close(modal));
+modal.__restoreFocus__ = document.activeElement;
+modal.querySelector(".close").focus();
 return modal;
 
 function close (modal) {
-modal.__restoreFocus__.focus();
-document.body.removeChild(element);
+if (modal.__restoreFocus__) modal.__restoreFocus__.focus();
+document.body.removeChild(modal);
 } // close
-
 } // displayModal
