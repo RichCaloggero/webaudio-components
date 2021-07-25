@@ -18,10 +18,13 @@ const media = document.querySelector("audio");
 
 document.body.appendChild(audio.app("enableAutomation; automationInterval=0.1",
 audio.series("hide=mix, bypass, silentBypass",
-window.player = audio.player("show=media, play, position; media=t.opus"),
+window.player = audio.player("show=media, play, position; position=1700; media=t.opus"),
 window.panner = audio.panner(`
-positionX=0; positionZ=0; radius=1; angle=${(Math.PI/2).toFixed(1)};
-channelCount=1; panningModel=HRTF; maxDistance=100; refDistance=50; rolloffFactor=0.3; orientationX=0;
+radius=1 | 20 * abs(cos(t/3 + 1));
+angle=0 | t/2;
+positionX=0; positionZ=0;
+maxDistance=100; refDistance=50; rolloffFactor=0.3;
+channelCount=2; panningModel=HRTF; orientationX=0;
 hide=orientationX, orientationY, orientationZ, coneInnerAngle, coneOuterAngle;
 `),
 createXtc(),
@@ -30,7 +33,7 @@ audio.destination()
 )); // audio.app
 
 function createXtc () {
-return audio.series("hide=silentBypass; mix=1",
+return audio.series("bypass=true; hide=silentBypass; mix=1",
 createBand("type=highpass; frequency=500; Q=0.26; gain=1"),
 window.xtc = audio.xtc("delay=0.00007; feedback=0.95; reverseStereo=1; gain=-1"),
 createBand("frequency=1000; gain=1"),

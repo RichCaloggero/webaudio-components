@@ -3,7 +3,7 @@ import {Control, update, setValue} from "./binder.js";
 import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
-import {addAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
+import {addAutomation, getAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
 
 /// root (top level UI)
 
@@ -109,6 +109,7 @@ const p = this.webaudioNode;
 this._radius = Number(value);
 p.positionX.value = this._radius*Math.cos(this._angle);
 p.positionZ.value = this._radius*Math.sin(this._angle);
+//statusMessage(`${(this._radius).toFixed(2)}, ${(this._angle).toFixed(2)} yields ${(p.positionX.value).toFixed(2)}, ${(p.positionZ.value).toFixed(2)}`);
 } // set
 }); // defineProperty
 
@@ -301,6 +302,7 @@ const savedValues = new Map();
 function numericFieldKeyboardHandler (e) {
 // all must be lowercase
 const commands = {
+"control alt shift enter": help,
 "control home": max, "control end": min,
 "control arrowup": increase10, "pageup": increase50,
 "control arrowdown": decrease10, "pagedown": decrease50,
@@ -310,7 +312,7 @@ const commands = {
 };
 
 const key = eventToKey(e).join(" ");
-//console.debug(`key: ${key}, command: ${commands[key]}`);
+console.debug(`key: ${key}, command: ${commands[key]}`);
 const element = e.target;
 
 if (key in commands && element.tagName.toLowerCase() === "input" && (element.type === "number" || element.type === "range")) {
@@ -320,22 +322,31 @@ execute(commands[key], element, Number(element.value));
 } // if
 
 function execute (command, element, value) {
-command(element, value);
+command(element, value, commands);
 
-if (element.validationMessage) {
-statusMessage(element.validationMessage);
-element.value = value;
-} else {
+//if (element.validationMessage) {
+//statusMessage(element.validationMessage);
+//element.value = value;
+//} else {
 update(element);
-} // if
+//} // if
 
 return true;
 } // execute
 
 /// commands
 
+function help (element, value, commands) {
+console.log("command keys: ", Object.keys(commands));
+let message = Object.keys(commands)
+.map(key => `<tr><th>${key}</th> <td> ${commands[key].name || "[no name]"}</td></tr>`)
+.join("<br>\n");
+
+displayModal(createModal({description: message}));
+} // help
+
 function defineAutomation (element) {
-const text = prompt("automator:").trim();
+const text = prompt("automator: ", (getAutomation(element) || {}).text).trim();
 if (!text) {
 removeAutomation(element);
 statusMessage("Automation removed.");
@@ -375,22 +386,20 @@ function decrease50 (input, value) {input.value = value - 50*Number(input.step);
  } // numericFieldKeyboardHandler
 
 
-const messageQueue = [];
 window.statusMessage = statusMessage;
 export function statusMessage (text, append, ignoreQueue) {
 const status = document.querySelector(".root .status, #status");
 if (!status) {
-messageQueue.push(text);
+alert(text);
 return;
 } // if
 
-messageQueue.forEach(message => statusMessage(message, "append"));
 if (append) {
 status.setAttribute("aria-atomic", "false");
 status.insertAdjacentHTML("beforeEnd", `<p class="message">${text}</p>\n`);
 } else {
 status.setAttribute("aria-atomic", "true");
-status.textContent = text;
+status.innerHTML = `<p>${text}</p>`;
 } // if
 } // statusMessage
 
@@ -406,3 +415,44 @@ if (_function && _function instanceof Function) return _function;
 statusMessage(`Invalid automation function: ${text}`);
 return false;
 } // compile
+
+function createModal (options) {
+const title = options.title || "modal";
+const id = {
+title: `${title}-title`,
+description: `${name}-description`,
+}; // id
+
+const modal = document.createElement("div");
+modal.setAttribute("style", "position: relative");
+
+modal.innerHTML =`
+<div role="dialog" aria-labelledby="${id.title}" style="position:absolute; left: 25%; right: 25%; top: 25%; bottom: 25%;">
+<header>
+<h2 class="title" id="${id.title}">${options.title || ""}</h2>
+<button class="close" aria-label="close">X</button>
+</header>
+<div class="body">
+<div class="description" id="${id.description}">${options.description || ""}</div>
+ {options.body || ""}
+</div><!-- body -->
+</div><!-- modal -->
+`; // html
+
+modal.__restoreFocus__ = document.activeElement;
+
+return modal;
+} // createModal
+
+function displayModal (modal) {
+document.body.appendChild(modal);
+
+modal.addEventListener("click", e => e.target.classList.contains("close") && close(element));
+return modal;
+
+function close (modal) {
+modal.__restoreFocus__.focus();
+document.body.removeChild(element);
+} // close
+
+} // displayModal
