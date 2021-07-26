@@ -288,7 +288,7 @@ if (component.children) component.children.forEach(child => {
 dom.appendChild(child.ui.container);
 buildDom(
 child,
-dom.getAttribute("role") !== "presentation"? depth+1 : depth
+dom.getAttribute("role") !== "presentation" && child.type === "container"? depth+1 : depth
 ); // buildDom
 }); // forEach child
 } // buildDom
@@ -307,12 +307,12 @@ const commands = {
 "control arrowup": increase10, "pageup": increase50,
 "control arrowdown": decrease10, "pagedown": decrease50,
 "control -": negate, "control 0": zero,
-"control enter": save, "control space": swap,
-"control shift enter": defineAutomation,
+"control space": save, "control shift space": swap,
+"control enter": defineAutomation,
 };
 
 const key = eventToKey(e).join(" ");
-console.debug(`key: ${key}, command: ${commands[key]}`);
+//console.debug(`key: ${key}, command: ${commands[key]}`);
 const element = e.target;
 
 if (key in commands && element.tagName.toLowerCase() === "input" && (element.type === "number" || element.type === "range")) {
@@ -449,6 +449,9 @@ function displayModal (modal) {
 document.body.appendChild(modal);
 
 modal.addEventListener("click", e => e.target.classList.contains("close") && close(modal));
+modal.addEventListener("focusout", maintainFocus);
+modal.addEventListener("keydown", e => e.key === "Escape"? close(modal) : true);
+
 modal.__restoreFocus__ = document.activeElement;
 modal.querySelector(".close").focus();
 return modal;
@@ -457,6 +460,15 @@ function close (modal) {
 if (modal.__restoreFocus__) modal.__restoreFocus__.focus();
 document.body.removeChild(modal);
 } // close
+
+function maintainFocus (e) {
+const focusTo = e.relatedTarget, focusFrom = e.target;
+//console.debug("maintainFocus: ", modal, focusFrom, focusTo, focusableElements);
+if (focusTo && modal.contains(focusTo)) return;
+e.preventDefault();
+console.debug("shifting focus...");
+setTimeout(() => focusFrom.focus(), 0);
+} // maintainFocus
 } // displayModal
 
 function removeBlanks (s) {return s.replace(/\s+/g, "");}

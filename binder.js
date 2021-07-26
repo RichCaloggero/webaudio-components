@@ -118,8 +118,10 @@ e.stopPropagation();
 const element = e.target;
 const name = element.dataset.name;
 const dataType = Control.dataTypeMap.get(element.closest(".field").dataset.dataType);
-const value = getValue(element);
+let value = getValue(element);
 if (nullish(value)) return;
+//if (dataType === Number) value = adjustStepSize(element, Number(value));
+
 //console.debug("in change handler: ", element.tagName, name, dataType, value );
 
 if (receiver[name] instanceof Function) receiver[name].call(receiver, dataType(value));
@@ -178,3 +180,18 @@ if (fireChangeEvent) element.dispatchEvent(new CustomEvent("change", {bubbles: t
 
 function nullish (value) {return value === null || value === undefined || value === "";}
 
+function adjustStepSize (element, value) {
+const s = Number(element.step);
+//console.debug("step initial: ", value, s);
+
+const n = value === 0?
+(0 <= value? -1 : 1)
+: Math.floor(Math.log10(value));
+const newStep = 10**n;
+
+element.step = newStep;
+element.value = newStep < s? s - newStep : value;
+//console.debug("- new: ", n, newStep, Number(element.value));
+
+return element.value;
+} // adjustStepSize

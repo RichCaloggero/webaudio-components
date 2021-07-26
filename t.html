@@ -22,9 +22,10 @@ window.player = audio.player("show=media, play, position; position=1700; media=t
 window.panner = audio.panner(`
 radius=1 | 20 * abs(cos(t/3 + 1));
 angle=0 | t/2;
-positionX=0; positionZ=0;
-maxDistance=100; refDistance=50; rolloffFactor=0.3;
-channelCount=2; panningModel=HRTF; orientationX=0;
+positionX=0; positionY=0; positionZ=0;
+distanceModel=inverse; maxDistance=100; refDistance=50; rolloffFactor=0.3;
+orientationX=0; orientationY=0; orientationZ=0;
+channelCount=2; panningModel=HRTF;
 hide=orientationX, orientationY, orientationZ, coneInnerAngle, coneOuterAngle;
 `),
 createXtc(),
