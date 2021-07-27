@@ -34,15 +34,15 @@ audio.destination()
 )); // audio.app
 
 function createXtc () {
-return audio.series("bypass=true; hide=silentBypass; mix=1",
-createBand("type=highpass; frequency=500; Q=0.26; gain=1"),
+return audio.series("title=XTC block; bypass=true; hide=silentBypass; mix=1",
+createBand("title=prefilter; type=highpass; frequency=500; Q=0.26; gain=1"),
 window.xtc = audio.xtc("delay=0.00007; feedback=0.95; reverseStereo=1; gain=-1"),
-createBand("frequency=1000; gain=1"),
+createBand("title=post filter; frequency=1000; gain=1"),
 ); // series
 } // createXtc
 
 function createBand (options) {
-return audio.series(`hide=${commonOptions}`,
+return audio.series(`title=EQ band; hide=${commonOptions}`,
 audio.filter(`hide=${commonOptions}, detune; ${options}`),
 audio.gain(`hide=${commonOptions}; gain=1`)
 ); // series

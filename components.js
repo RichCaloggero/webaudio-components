@@ -1,4 +1,4 @@
-import {union, intersection, difference} from "./setops.js";
+import {union, intersection, symmetricDifference, difference} from "./setops.js";
 import {Control, update, setValue} from "./binder.js";
 import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
@@ -205,16 +205,19 @@ const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFie
 d.name === "hide")? (add(hide, d.defaultValue), false) : true
 ).filter(d => (d.name === "show")?
 (add(show, d.defaultValue), false) : true
-).forEach(initialize);
+).filter(d => d.name === "title"?
+(container.querySelector(".component-title").textContent = d.defaultValue, false) : true
+ ).forEach(initialize);
 
-/*console.debug("component: ", component,
+/*if (component.name === "series")
+console.debug("component: ", component,
 	"hide: ", hide,
 "show: ", show,
-//"initialized: ", initialized
+"initialized: ", initialized
 );
 */
 
-const fieldsToShow = [...difference(
+const fieldsToShow = [...symmetricDifference(
 union(union(initialized, show), AudioComponent.sharedParameterNames),
 hide
 )].map(name => getField(name, container))
