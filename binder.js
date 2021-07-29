@@ -62,7 +62,7 @@ receiver = this.receiver
 const element = createControl(receiver, name, dataType, defaultValue,
 `<button data-name="${name}">${label}</button>`
 ); // createControl
-element.addEventListener("click", e => {update(e.target); alert("updated button");});
+element.addEventListener("click", e => update(e.target));
 return element;
 } // action
 
@@ -78,7 +78,7 @@ const element = createControl(
 receiver, name, dataType, defaultValue,
 `<button data-name="${name}" aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
 );
-element.dataset.value = dataType(defaultValue);
+element.dataset.value = (defaultValue);
 booleanHelper(element);
 return element;
 } // boolean
@@ -140,8 +140,9 @@ e.stopPropagation();
 
 
 const element = e.target;
+const field = element.closest(".field");
 const name = element.dataset.name;
-const dataType = Control.dataTypeMap.get(element.closest(".field").dataset.dataType);
+const dataType = Control.dataTypeMap.get(field.dataset.dataType);
 let value = getValue(element);
 
 if (dataType === Action) {
@@ -150,6 +151,8 @@ return;
 } else if (nullish(value)) {
 return;
 } // if
+
+field.dataset.value = getValue(element);
 
 //storeValue(receiver, name, value);
 //if (dataType === Number) value = adjustStepSize(element, Number(value));
@@ -236,7 +239,6 @@ element.value = value;
 
 if (fireChangeEvent) update(element);
 } // setValue
-
 
 function nullish (value) {return value === null || value === undefined || value === "";}
 

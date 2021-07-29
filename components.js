@@ -4,7 +4,7 @@ import {audioContext, AudioComponent, wrapWebaudioNode, Delay, Destination, Xtc,
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {addAutomation, getAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
-import {allComponents, storeAll, restoreAll} from "./save-restore.js";
+//import {allComponents, storeAll, restoreAll} from "./save-restore.js";
 
 /// root (top level UI)
 
@@ -27,10 +27,18 @@ children: [child],
 automationType: "ui",
 
 get storeAll () {return null;},
-set storeAll (value) {if (!this._initialized) return; storeAll(this); statusMessage("Done.");},
+set storeAll (value) {
+if (!this._initialized) return;
+storeAllFields();
+statusMessage("Done.");
+}, // set storeAll
 
 get restoreAll () {return null;},
-set restoreAll (value) {if (!this._initialized) return; restoreAll(this); statusMessage("Done.");},
+set restoreAll (value) {
+if (!this._initialized) return;
+restoreAllFields();
+statusMessage("Done.");
+}, // set restoreAll
 
 get automationInterval () {return getAutomationInterval();},
 set automationInterval (value) {setAutomationInterval(value);},
@@ -59,7 +67,6 @@ applyFieldInitializer(options, component);
 component._initialized = true;
 
 setTimeout(() => statusMessage("Ready."), 10); // give time for dom to settle
-console.debug("all: ", enumerateInteractiveElements(component));
 
 return component;
 } // app
@@ -495,10 +502,20 @@ setTimeout(() => focusFrom.focus(), 0);
 
 function removeBlanks (s) {return s.replace(/\s+/g, "");}
 
-function storeAllFields (fields) {
-fields.forEach(item => {
-const [component, element] = item;
-localStorage.setItem(keyGen(component, element.dataset.name), element.value);
-}); // forEach
+function storeAllFields () {
+document.querySelectorAll(".field").forEach(f => {
+if (f.dataset.dataType === "Action") return;
+localStorage.setItem(f.dataset.storageKey, f.dataset.value);
+});
 } // storeAllFields
+
+function restoreAllFields () {
+document.querySelectorAll(".field").forEach(field => {
+if (field.dataset.dataType === "Action") return;
+const value = field.dataset.dataType === "Boolean"? localStorage.getItem(field.dataset.storageKey) === "true" : localStorage.getItem(field.dataset.storageKey);
+const element = field.querySelector("[data-name]");
+
+setValue(element, value, "fireChangeEvent");
+});
+} // restoreAllFields
 
