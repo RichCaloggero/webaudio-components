@@ -16,7 +16,7 @@ import {getValue, setValue} from "./binder.js";
 const commonOptions = "bypass, silentBypass, mix";
 const media = document.querySelector("audio");
 
-document.body.appendChild(audio.app("enableAutomation; automationInterval=0.1",
+window.app = audio.app("enableAutomation; automationInterval=0.1",
 audio.series("hide=mix, bypass, silentBypass",
 window.player = audio.player("show=media, play, position; position=1700; media=t.opus"),
 window.panner = audio.panner(`
@@ -31,19 +31,20 @@ hide=orientationX, orientationY, orientationZ, coneInnerAngle, coneOuterAngle;
 createXtc(),
 audio.destination()
 ) // series
-)); // audio.app
+);
+document.body.appendChild(app.ui.container); // audio.app
 
 function createXtc () {
 return audio.series("title=XTC block; bypass=true; hide=silentBypass; mix=1",
-createBand("title=prefilter; type=highpass; frequency=500; Q=0.26; gain=1"),
+createBand("title=prefilter; bypass; type=highpass; frequency=500; Q=0.26; gain=1"),
 window.xtc = audio.xtc("delay=0.00007; feedback=0.95; reverseStereo=1; gain=-1"),
-createBand("title=post filter; frequency=1000; gain=1"),
+createBand("title=post filter; bypass=true; frequency=1000; gain=1"),
 ); // series
 } // createXtc
 
 function createBand (options) {
-return audio.series(`title=EQ band; hide=${commonOptions}`,
-audio.filter(`hide=${commonOptions}, detune; ${options}`),
+return audio.series(`title=eQ band; hide=${commonOptions}`,
+audio.filter(`hide=silentBypass, mix, detune; ${options}`),
 audio.gain(`hide=${commonOptions}; gain=1`)
 ); // series
 } // createBand

@@ -1,11 +1,14 @@
 import {union, intersection, symmetricDifference, difference} from "./setops.js";
-import {Control, update, setValue} from "./binder.js";
-import {audioContext, AudioComponent, wrapWebaudioNode, createFields, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel} from "./audioComponent.js";
+import {Control, update, setValue, createFields} from "./binder.js";
+import {audioContext, AudioComponent, wrapWebaudioNode, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {addAutomation, getAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
+import {allComponents, storeAll, restoreAll} from "./save-restore.js";
 
 /// root (top level UI)
+
+let _app = null;
 
 export function app (options, child) {
 if (arguments.length === 1) {
@@ -16,9 +19,18 @@ alert ("app: must have either 1 or 2 arguments");
 return;
 } // if
 
-const component = {
+options = `show=storeAll, restoreAll; ${options}`;
+const component = _app = {
+_initialized: false,
+_id: `app-${componentId.next().value}`,
 children: [child],
 automationType: "ui",
+
+get storeAll () {return null;},
+set storeAll (value) {if (!this._initialized) return; storeAll(this); statusMessage("Done.");},
+
+get restoreAll () {return null;},
+set restoreAll (value) {if (!this._initialized) return; restoreAll(this); statusMessage("Done.");},
 
 get automationInterval () {return getAutomationInterval();},
 set automationInterval (value) {setAutomationInterval(value);},
@@ -33,7 +45,7 @@ ui.container.classList.add("root");
 
 createFields(
 component, ui,
-["enableAutomation", "automationInterval", "automationType"]
+["storeAll", "restoreAll", "enableAutomation", "automationInterval", "automationType"]
 ); // createFields
 
 component.ui = ui;
@@ -41,12 +53,15 @@ component.ui = ui;
 buildDom(component);
 
 ui.container.addEventListener ("keydown", numericFieldKeyboardHandler);
-ui.container.querySelectorAll("input, button").forEach(x => update(x));
-setTimeout(() => statusMessage("Ready."), 10); // give time for dom to settle
 
-ui.component = app;
 applyFieldInitializer(options, component);
-return ui.container;
+[...ui.container.querySelectorAll("input, button")].forEach(x => update(x));
+component._initialized = true;
+
+setTimeout(() => statusMessage("Ready."), 10); // give time for dom to settle
+console.debug("all: ", enumerateInteractiveElements(component));
+
+return component;
 } // app
 
 
@@ -194,7 +209,9 @@ function applyFieldInitializer (fd, component) {
 fd = fd.trim();
 if (!fd) return component;
 
-const container = component.ui.container;
+const container = component.ui.container.querySelector(".fields");
+if (!container) return component;
+
 const initialized = new Set();
 const hide = new Set();
 const show = new Set();
@@ -206,7 +223,7 @@ d.name === "hide")? (add(hide, d.defaultValue), false) : true
 ).filter(d => (d.name === "show")?
 (add(show, d.defaultValue), false) : true
 ).filter(d => d.name === "title"?
-(container.querySelector(".component-title").textContent = d.defaultValue, false) : true
+(container.parentElement.querySelector(".component-title").textContent = d.defaultValue, false) : true
  ).forEach(initialize);
 
 /*if (component.name === "series")
@@ -226,8 +243,8 @@ hide
 
 if (fieldsToShow.length === 0) {
 if (component.type === "container") {
-container.querySelector(".component-title").hidden = true;
-container.setAttribute("role", "presentation");
+container.parentElement.querySelector(".component-title").hidden = true;
+container.parentElement.setAttribute("role", "presentation");
 } // if
 
 } else {
@@ -243,8 +260,9 @@ const element = getInteractiveElement(name, container);
 
 if (element) {
 initialized.add(name);
+if (element.dataset.datatype === "action") return;
 
-if (defaultValue.length > 0) setValue(element, defaultValue);
+if (defaultValue && defaultValue.length > 0) setValue(element, defaultValue);
 if (automator) addAutomation(element, automator, compile(automator));
 
 //console.debug("descriptor: ", name, defaultValue, element);
@@ -284,11 +302,12 @@ values.forEach(x => s.add(x));
 
 function buildDom(component, depth = 1) {
 const dom = component.ui.container;
+const domChildren = dom.querySelector(".children");
 setDepth(dom, depth);
 //console.debug("build: ", depth, dom);
 if (component.children) component.children.forEach(child => {
 //console.debug("- appending ", child.ui.container);
-dom.appendChild(child.ui.container);
+domChildren.appendChild(child.ui.container);
 buildDom(
 child,
 dom.getAttribute("role") !== "presentation" && child.type === "container"? depth+1 : depth
@@ -413,7 +432,7 @@ function trimValues(a) {return a.map(x => x.trim());}
 
 function getInteractiveElement (name, container = document) {return container.querySelector(`[data-name=${name}]`);}
 function getField (name, container) {return getInteractiveElement(name, container)?.closest(".field");}
-function getAllFields(container = document) {return [...container.querySelectorAll(".field")];}
+function getAllFields(container) {return [...container.querySelector(".fields").querySelectorAll(".field")];}
 
 function compile (text) {
 const _function = compileFunction(text);
@@ -475,3 +494,11 @@ setTimeout(() => focusFrom.focus(), 0);
 } // displayModal
 
 function removeBlanks (s) {return s.replace(/\s+/g, "");}
+
+function storeAllFields (fields) {
+fields.forEach(item => {
+const [component, element] = item;
+localStorage.setItem(keyGen(component, element.dataset.name), element.value);
+}); // forEach
+} // storeAllFields
+

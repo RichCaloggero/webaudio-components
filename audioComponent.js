@@ -1,3 +1,4 @@
+import {createFields} from "./binder.js";
 import {intersection, difference} from "./setops.js";
 import {Control} from "./binder.js";
 export let audioContext = new AudioContext();
@@ -6,15 +7,8 @@ await audioContext.resume();
 await audioContext.audioWorklet.addModule("./xtc.worklet.js");
 console.log("audioWorklet.xtc created.");
 
-// registry helps generate id strings
-const registry = new Map();
-function registerComponent (name) {
-if (!name) return 0;
-if (registry.has(name)) registry.set(name, 0);
-registry.set(name, registry.get(name) + 1);
-return registry.get(name);
-} // registerComponent
-
+function* idGen () {let count = 1; while(true) yield count++;}
+export const componentId = idGen();
 let errorVerbosity = 0;
 
 export class AudioComponent {
@@ -36,9 +30,9 @@ delay: {defaultValue: 0, min: 0, max: 1, step: 0.00001}
 constructor (audio, name, parent = null) {
 //console.debug("audioComponent: instantiating ", name);
 this.audio = audio;
-this.name = name;
+this.name = name || "component";
 this.parent = parent;
-this._id = registerComponent(name);
+this._id = `${this.name}-${componentId.next().value}`;
 
 this._bypass = false;
 this._silentBypass = false;
@@ -452,31 +446,8 @@ const names = new Set(_names);
 return [...intersection(names, ordering), ...difference(names, ordering)];
 } // reorder
 
-function isAudioParam (node, property) {return node && node[property] instanceof AudioParam;}
+export function isAudioParam (node, property) {return node && node[property] instanceof AudioParam;}
 
-export function createFields (component, ui, propertyNames, node = null) {
-propertyNames.forEach(property => {
-if (typeof(component[property]) === "number") {
-
-ui.container.appendChild(ui.number(
-Object.assign(
-{name: property,
-min: -Infinity, max: Infinity,
-defaultValue: node?
-(isAudioParam(node, property)? node[property].defaultValue : node[property])
-: 0},
-AudioComponent.constraints[property]
-) // assign
-));
-
-} else if (typeof(component[property]) === "boolean") {
-ui.container.appendChild(ui.boolean({name: property}));
-
-} else if (typeof(component[property]) === "string") {
-ui.container.appendChild(ui.string({name: property}));
-} // if
-}); // forEach
-} // createFields
 
 export function createBufferSource (buffer) {
 if (buffer instanceof AudioBuffer) {
@@ -488,3 +459,4 @@ console.error("createBufferSource: first argument must be a audio buffer", buffe
 return null;
 } // if
 } // createBufferSource
+

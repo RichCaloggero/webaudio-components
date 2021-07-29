@@ -11,11 +11,11 @@ return {name, defaultValue, automator, value};
 
 
 function splitOnBar (s = "") {
-return s.split(/\s*\|+\s*/);
+return s? s.split(/\s*\|+\s*/) : "";
 } // splitOnBar
 
 function splitOnEquals (s = "") {
-return s.split(/\s*=+\s*/);
+return s? s.split(/\s*=+\s*/) : "";
 } // splitOnEquals
 
 function splitOnSemi (s = "") {

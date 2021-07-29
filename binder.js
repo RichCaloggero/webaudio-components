@@ -1,9 +1,15 @@
+import {AudioComponent, isAudioParam} from "./audioComponent.js";
+import {storeValue, keyGen} from "./save-restore.js";
+
+function Action (value) {return value;}
+
 export class Control {
 static dataTypes = new Set([
-Number, String, Boolean,
+Action, Number, String, Boolean,
 ]);
 
 static dataTypeMap = new Map([
+["Action", Action],
 ["String", String],
 ["Boolean", Boolean],
 ["Number", Number]
@@ -24,6 +30,8 @@ this.container.setAttribute("aria-label", label);
 this.container.className = `component ${label}`;
 this.container.innerHTML = `
 <div  class="component-title" role="heading">${label}</div>
+<div class="fields"></div>
+<div class="children"></div>
 `;
 
 this.container.addEventListener("change", createUpdateHandler(this));
@@ -43,6 +51,20 @@ return createControl(receiver, name, dataType, defaultValue,
 </label>
 `);
 } // string
+
+action ({
+name = "",
+label = separateWords(name),
+dataType = Action,
+defaultValue = null,
+receiver = this.receiver
+}) {
+const element = createControl(receiver, name, dataType, defaultValue,
+`<button data-name="${name}">${label}</button>`
+); // createControl
+element.addEventListener("click", e => {update(e.target); alert("updated button");});
+return element;
+} // action
 
 
 boolean ({
@@ -100,15 +122,17 @@ throw new Error(`createControl: invalid markup - ${e}`);
 control.hidden = true;
 control.className = `${dataType.name.toLowerCase()} field ${name}`;
 control.dataset.dataType = dataType.name;
+control.dataset.componentId = receiver._id;
+control.dataset.storageKey = keyGen(receiver, name);
 
 return control;
 } // createControl
 
 function createUpdateHandler (ui) {
 const {receiver, container} = ui;
-//console.debug("createUpdateHandler: ", receiver.name, container.className);
 if (! receiver) throw new Error("need receiver");
 if (! container) throw new Error("need container");
+//console.debug("createUpdateHandler: ", receiver.name, container.className);
 
 return e => {
 e.stopPropagation();
@@ -119,7 +143,15 @@ const element = e.target;
 const name = element.dataset.name;
 const dataType = Control.dataTypeMap.get(element.closest(".field").dataset.dataType);
 let value = getValue(element);
-if (nullish(value)) return;
+
+if (dataType === Action) {
+receiver[name] = "dummy value";
+return;
+} else if (nullish(value)) {
+return;
+} // if
+
+//storeValue(receiver, name, value);
 //if (dataType === Number) value = adjustStepSize(element, Number(value));
 
 //console.debug("in change handler: ", element.tagName, name, dataType, value );
@@ -143,9 +175,37 @@ element.dispatchEvent(new CustomEvent("change", {bubbles: true}));
 function booleanHelper (element) {
 element.addEventListener("click", e => {
 setState(e.target, !getState(e.target));
-e.target.dispatchEvent(new CustomEvent("change", {bubbles: true}));
+//e.target.dispatchEvent(new CustomEvent("change", {bubbles: true}));
+update(e.target);
 }); // click handler
 } // booleanHelper
+
+export function createFields (component, ui, propertyNames, node = null) {
+const fields = ui.container.querySelector(".fields");
+propertyNames.forEach(property => {
+if (typeof(component[property]) === "number") {
+fields.appendChild(ui.number(
+Object.assign(
+{name: property,
+min: -Infinity, max: Infinity,
+defaultValue: node?
+(isAudioParam(node, property)? node[property].defaultValue : node[property])
+: 0},
+AudioComponent.constraints[property]
+) // assign
+));
+
+} else if (typeof(component[property]) === "boolean") {
+fields.appendChild(ui.boolean({name: property}));
+
+} else if (typeof(component[property]) === "string") {
+fields.appendChild(ui.string({name: property}));
+
+} else if (component[property] === null) {
+fields.appendChild(ui.action({name: property}));
+} // if
+}); // forEach
+} // createFields
 
 function separateWords (text) {
 return text.replace(/([a-z])([A-Z])([a-z])/g, "$1 $2$3");
@@ -154,7 +214,7 @@ return text.replace(/([a-z])([A-Z])([a-z])/g, "$1 $2$3");
 export function getState (button) {
 return button.hasAttribute("aria-pressed")?
 button.getAttribute("aria-pressed") === "true"
-: false;
+: null;
 } // getState
 
 export function setState (button, value) {
@@ -174,7 +234,7 @@ setState(element, value);
 element.value = value;
 } // if
 
-if (fireChangeEvent) element.dispatchEvent(new CustomEvent("change", {bubbles: true}));
+if (fireChangeEvent) update(element);
 } // setValue
 
 
@@ -195,3 +255,5 @@ element.value = newStep < s? s - newStep : value;
 
 return element.value;
 } // adjustStepSize
+
+window.Control = Control;
