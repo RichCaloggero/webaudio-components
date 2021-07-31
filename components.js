@@ -7,7 +7,6 @@ import {addAutomation, getAutomation, removeAutomation, enableAutomation, disabl
 import {keyboardHandler} from "./keyboardHandler.js";
 import * as dom from "./dom.js";
 
-//import {allComponents, storeAll, restoreAll} from "./save-restore.js";
 
 /// root (top level UI)
 
@@ -78,8 +77,8 @@ statusMessage("State saved.");
 } // if
 }); // visibilitychanged
 
+[...ui.container.querySelectorAll("input, button")].forEach(x => update(x));
 setTimeout(() => {
-//[...ui.container.querySelectorAll("input, button")].forEach(x => update(x));
 component._initialized = true;
 statusMessage("Ready.");
 }, 0); // give time for dom to settle
