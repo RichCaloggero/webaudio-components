@@ -1,7 +1,6 @@
 import {union, intersection, symmetricDifference, difference} from "./setops.js";
 import {Control, update, setValue, createFields} from "./ui.js";
 import {audioContext, AudioComponent, wrapWebaudioNode, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
-import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {addAutomation, getAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
 import {keyboardHandler} from "./keyboardHandler.js";
@@ -35,14 +34,14 @@ set saveOnExit (value) {this._saveOnExit = value;},
 get storeAll () {return null;},
 set storeAll (value) {
 if (!this._initialized) return;
-storeAllFields();
+dom.storeAllFields();
 statusMessage("Done.");
 }, // set storeAll
 
 get restoreAll () {return null;},
 set restoreAll (value) {
 if (!this._initialized) return;
-restoreAllFields();
+dom.restoreAllFields();
 statusMessage("Done.");
 }, // set restoreAll
 
@@ -77,11 +76,11 @@ statusMessage("State saved.");
 } // if
 }); // visibilitychanged
 
-[...ui.container.querySelectorAll("input, button")].forEach(x => update(x));
+dom.getAllInteractiveElements(ui.container).forEach(element => update(element));
 setTimeout(() => {
 component._initialized = true;
 statusMessage("Ready.");
-}, 0); // give time for dom to settle
+}, 1); // give time for dom to settle
 return component;
 } // app
 
@@ -166,11 +165,15 @@ createFields(component, component.ui, ["radius", "angle"]);
 return applyFieldInitializer(options, component);
 
 function setCartesianUI (x, y, z) {
-setValue(component.ui.getElementByName("positionX"), x);
-setValue(component.ui.getElementByName("positionY"), y);
-setValue(component.ui.getElementByName("positionZ"), z);
+setValue(component.ui.nameToElement("positionX"), x);
+setValue(component.ui.nameToElement("positionY"), y);
+setValue(component.ui.nameToElement("positionZ"), z);
 } // setCartesianUI
 
+function setPolarUI (radius, angle) {
+setValue(component.ui.nameToElement("radius"), radius);
+setValue(component.ui.nameToElement("angle"), angle);
+} // setPolarUI
 
 } // panner
 
@@ -268,7 +271,7 @@ console.debug("component: ", component,
 const fieldsToShow = [...symmetricDifference(
 union(union(initialized, show), AudioComponent.sharedParameterNames),
 hide
-)].map(name => dom.getField(name, container))
+)].map(name => component.ui.nameToField(name))
 .filter(field => field);
 //console.debug("fieldsToShow: ", component.name, container.label, fieldsToShow);
 
@@ -287,7 +290,7 @@ return component;
 function initialize (d) {
 //console.debug("initializer: ", d);
 const {name, defaultValue, automator} = d;
-const element = dom.getInteractiveElement(name, container);
+const element = component.ui.nameToElement(name);
 
 if (element) {
 initialized.add(name);
@@ -341,24 +344,4 @@ return false;
 } // compile
 
 function removeBlanks (s) {return s.replace(/\s+/g, "");}
-
-function getAllFields(container) {return [...(container.fields ?? container).querySelectorAll(".field")];}
-
-function storeAllFields () {
-document.querySelectorAll(".field").forEach(f => {
-if (f.dataset.dataType === "Action") return;
-localStorage.setItem(f.dataset.storageKey, f.dataset.value);
-});
-} // storeAllFields
-
-function restoreAllFields () {
-document.querySelectorAll(".field").forEach(field => {
-if (field.dataset.dataType === "Action") return;
-const value = field.dataset.dataType === "Boolean"? localStorage.getItem(field.dataset.storageKey) === "true" : localStorage.getItem(field.dataset.storageKey);
-const element = field.querySelector("[data-name]");
-
-setValue(element, value, "fireChangeEvent");
-});
-} // restoreAllFields
-
 

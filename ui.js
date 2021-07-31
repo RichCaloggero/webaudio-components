@@ -1,3 +1,4 @@
+import * as dom from "./dom.js";
 import {AudioComponent, isAudioParam} from "./audioComponent.js";
 import {storeValue, keyGen} from "./save-restore.js";
 
@@ -117,8 +118,11 @@ min="${min}" max="${max}" step="${step}">
 `);
 } // number
 
-
+nameToField (name) {return this.container.querySelector(`.fields > .field[data-name=${name}]`);}
+nameToElement (name) {return dom.fieldToElement(this.nameToField(name));}
 } // class Control
+
+/// helpers
 
 function createControl (receiver, name, dataType, defaultValue, html) {
 const control = document.createElement("div");
@@ -130,6 +134,7 @@ throw new Error(`createControl: invalid markup - ${e}`);
 
 control.hidden = true;
 control.className = `${dataType.name.toLowerCase()} field ${name}`;
+control.dataset.name = name;
 control.dataset.dataType = dataType.name;
 control.dataset.componentId = receiver._id;
 control.dataset.storageKey = keyGen(receiver, name);

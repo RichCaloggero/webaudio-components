@@ -1,4 +1,6 @@
+import {eventToKey} from "./key.js";
 import {displayModal, createModal} from "./ui.js";
+
 const savedValues = new Map();
 export function keyboardHandler(e) {
 // all must be lowercase
