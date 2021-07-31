@@ -1,9 +1,12 @@
 import {union, intersection, symmetricDifference, difference} from "./setops.js";
-import {Control, update, setValue, createFields} from "./binder.js";
+import {Control, update, setValue, createFields} from "./ui.js";
 import {audioContext, AudioComponent, wrapWebaudioNode, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
 import {eventToKey} from "./key.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {addAutomation, getAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
+import {keyboardHandler} from "./keyboardHandler.js";
+import * as dom from "./dom.js";
+
 //import {allComponents, storeAll, restoreAll} from "./save-restore.js";
 
 /// root (top level UI)
@@ -19,12 +22,16 @@ alert ("app: must have either 1 or 2 arguments");
 return;
 } // if
 
-options = `show=storeAll, restoreAll; ${options}`;
+options = `show=saveOnExit, storeAll, restoreAll; ${options}`;
 const component = _app = {
 _initialized: false,
 _id: `app-${componentId.next().value}`,
 children: [child],
 automationType: "ui",
+
+_saveOnExit: false,
+get saveOnExit () {return this._saveOnExit;},
+set saveOnExit (value) {this._saveOnExit = value;},
 
 get storeAll () {return null;},
 set storeAll (value) {
@@ -53,21 +60,29 @@ ui.container.classList.add("root");
 
 createFields(
 component, ui,
-["storeAll", "restoreAll", "enableAutomation", "automationInterval", "automationType"]
+["saveOnExit", "storeAll", "restoreAll", "enableAutomation", "automationInterval", "automationType"]
 ); // createFields
 
 component.ui = ui;
 
-buildDom(component);
+dom.buildDom(component);
 
-ui.container.addEventListener ("keydown", numericFieldKeyboardHandler);
+ui.container.addEventListener ("keydown", keyboardHandler);
 
 applyFieldInitializer(options, component);
-[...ui.container.querySelectorAll("input, button")].forEach(x => update(x));
+
+document.addEventListener("visibilitychange", e => {
+if (component.saveOnExit && e.target.visibilityState === "hidden") {
+storeAll();
+statusMessage("State saved.");
+} // if
+}); // visibilitychanged
+
+setTimeout(() => {
+//[...ui.container.querySelectorAll("input, button")].forEach(x => update(x));
 component._initialized = true;
-
-setTimeout(() => statusMessage("Ready."), 10); // give time for dom to settle
-
+statusMessage("Ready.");
+}, 0); // give time for dom to settle
 return component;
 } // app
 
@@ -131,7 +146,8 @@ const p = this.webaudioNode;
 this._radius = Number(value);
 p.positionX.value = this._radius*Math.cos(this._angle);
 p.positionZ.value = this._radius*Math.sin(this._angle);
-//statusMessage(`${(this._radius).toFixed(2)}, ${(this._angle).toFixed(2)} yields ${(p.positionX.value).toFixed(2)}, ${(p.positionZ.value).toFixed(2)}`);
+// update x and y in UI
+setCartesianUI(p.positionX.value, p.positionY.value, p.positionZ.value);
 } // set
 }); // defineProperty
 
@@ -142,12 +158,21 @@ const p = this.webaudioNode;
 this._angle = Number(value);
 p.positionX.value = this._radius*Math.cos(this._angle);
 p.positionZ.value = this._radius*Math.sin(this._angle);
+setCartesianUI(p.positionX.value, p.positionY.value, p.positionZ.value);
 } // set
 }); // defineProperty
 
 createFields(component, component.ui, ["radius", "angle"]);
 
 return applyFieldInitializer(options, component);
+
+function setCartesianUI (x, y, z) {
+setValue(component.ui.getElementByName("positionX"), x);
+setValue(component.ui.getElementByName("positionY"), y);
+setValue(component.ui.getElementByName("positionZ"), z);
+} // setCartesianUI
+
+
 } // panner
 
 export function delay(options) {
@@ -216,7 +241,7 @@ function applyFieldInitializer (fd, component) {
 fd = fd.trim();
 if (!fd) return component;
 
-const container = component.ui.container.querySelector(".fields");
+const container = component.ui.container.fields;
 if (!container) return component;
 
 const initialized = new Set();
@@ -244,7 +269,7 @@ console.debug("component: ", component,
 const fieldsToShow = [...symmetricDifference(
 union(union(initialized, show), AudioComponent.sharedParameterNames),
 hide
-)].map(name => getField(name, container))
+)].map(name => dom.getField(name, container))
 .filter(field => field);
 //console.debug("fieldsToShow: ", component.name, container.label, fieldsToShow);
 
@@ -263,7 +288,7 @@ return component;
 function initialize (d) {
 //console.debug("initializer: ", d);
 const {name, defaultValue, automator} = d;
-const element = getInteractiveElement(name, container);
+const element = dom.getInteractiveElement(name, container);
 
 if (element) {
 initialized.add(name);
@@ -282,143 +307,17 @@ function add (set, values) {
 addValues(set, trimValues(values.split(",")));
 } // add
 
-/*-delete
-function add (set, name) {
-return d => {
-if (d.name === name) {
-addValues(set,
-trimValues(
-d.defaultValue.split(",")
-) // trimValues
-); // addValues
-return false;
-} else {
-return true;
-} // if
-} // function
-} // add
-*/
 
 function addValues (s, values) {
 values.forEach(x => s.add(x));
 } // addValues
 
+function trimValues(a) {return a.map(x => x.trim());}
 
 } // applyFieldInitializer
 
 
-function buildDom(component, depth = 1) {
-const dom = component.ui.container;
-const domChildren = dom.querySelector(".children");
-setDepth(dom, depth);
-//console.debug("build: ", depth, dom);
-if (component.children) component.children.forEach(child => {
-//console.debug("- appending ", child.ui.container);
-domChildren.appendChild(child.ui.container);
-buildDom(
-child,
-dom.getAttribute("role") !== "presentation" && child.type === "container"? depth+1 : depth
-); // buildDom
-}); // forEach child
-} // buildDom
 
-function setDepth (container, depth) {
-//console.debug(`dom: ${container.className}, depth ${depth}`);
-container.querySelector(".component-title").setAttribute("aria-level", depth);
-} // setDepth
-
-const savedValues = new Map();
-function numericFieldKeyboardHandler (e) {
-// all must be lowercase
-const commands = {
-"control alt shift enter": help,
-"control home": max, "control end": min,
-"control arrowup": increase10, "pageup": increase50,
-"control arrowdown": decrease10, "pagedown": decrease50,
-"control -": negate, "control 0": zero,
-"control space": save, "control shift space": swap,
-"control enter": defineAutomation,
-};
-
-const key = eventToKey(e).join(" ");
-//console.debug(`key: ${key}, command: ${commands[key]}`);
-const element = e.target;
-
-if (key in commands && element.tagName.toLowerCase() === "input" && (element.type === "number" || element.type === "range")) {
-e.preventDefault();
-e.stopPropagation();
-execute(commands[key], element, Number(element.value));
-} // if
-
-function execute (command, element, value) {
-command(element, value, commands);
-
-//if (element.validationMessage) {
-//statusMessage(element.validationMessage);
-//element.value = value;
-//} else {
-update(element);
-//} // if
-
-return true;
-} // execute
-
-/// commands
-
-function help (element, value, commands) {
-console.log("command keys: ", Object.keys(commands));
-let message = Object.keys(commands)
-.map(key => `<tr><th>${key}</th> <td> ${commands[key].name || "[no name]"}</td></tr>`)
-.join("\n");
-
-displayModal(createModal({
-title: "Keyboard help",
-body: `<table><tr><th>key</th><th>command</th></tr>${message}</table>`
-}));
-} // help
-
-function defineAutomation (element) {
-const text = prompt("automator: ", (getAutomation(element) || {}).text).trim();
-if (!text) {
-removeAutomation(element);
-statusMessage("Automation removed.");
-return;
-} // if
-
-const _function = compile(text);
-if (_function) addAutomation(element, text, _function);
-} // defineAutomation
-
-function save (element, value) {
-savedValues.set(element, value);
-statusMessage("saved.");
-} // save
-
-function swap (element, value) {
-if (!savedValues.has(element)) {
-statusMessage("no saved value.");
-return;
-} // if
-
-const savedValue = savedValues.get(element);
-savedValues.set(element, value);
-element.value = Number(savedValue);
-} // swap
-
-function negate (input, value) {input.value = -1*value;}
-function zero (input) {input.value = 0;}
-
-function max (input) {input.value = Number(input.max);} // max
-function min (input) {input.value = Number(input.min);}
-
-function increase10 (input, value) {input.value = value + 10*Number(input.step);}
-function increase50 (input, value) {input.value = value + 50*Number(input.step);}
-function decrease10 (input, value) {input.value = value - 10*Number(input.step);}
-function decrease50 (input, value) {input.value = value - 50*Number(input.step);}
- } // numericFieldKeyboardHandler
-
-
-window.statusMessage = statusMessage;
 export function statusMessage (text, append, ignoreQueue) {
 const status = document.querySelector(".root .status, #status");
 if (!status) {
@@ -435,12 +334,6 @@ status.innerHTML = `<p>${text}</p>`;
 } // if
 } // statusMessage
 
-function trimValues(a) {return a.map(x => x.trim());}
-
-function getInteractiveElement (name, container = document) {return container.querySelector(`[data-name=${name}]`);}
-function getField (name, container) {return getInteractiveElement(name, container)?.closest(".field");}
-function getAllFields(container) {return [...container.querySelector(".fields").querySelectorAll(".field")];}
-
 function compile (text) {
 const _function = compileFunction(text);
 if (_function && _function instanceof Function) return _function;
@@ -448,59 +341,9 @@ statusMessage(`Invalid automation function: ${text}`);
 return false;
 } // compile
 
-function createModal (options) {
-const title = options.title || "modal";
-const id = {
-title: `${removeBlanks(title)}-title`,
-description: `${removeBlanks(title)}-description`,
-}; // id
-
-const modal = document.createElement("div");
-modal.setAttribute("style", "position: relative");
-
-modal.innerHTML =`
-<div role="dialog" aria-labelledby="${id.title}" style="position:absolute; left: 25%; right: 25%; top: 25%; bottom: 25%;">
-<header>
-<h2 class="title" id="${id.title}">${options.title || ""}</h2>
-<button class="close" aria-label="close">X</button>
-</header>
-<div class="body">
-<div class="description" id="${id.description}">${options.description || ""}</div>
- ${options.body || ""}
-</div><!-- body -->
-</div><!-- modal -->
-`; // html
-
-return modal;
-} // createModal
-
-function displayModal (modal) {
-document.body.appendChild(modal);
-
-modal.addEventListener("click", e => e.target.classList.contains("close") && close(modal));
-modal.addEventListener("focusout", maintainFocus);
-modal.addEventListener("keydown", e => e.key === "Escape"? close(modal) : true);
-
-modal.__restoreFocus__ = document.activeElement;
-modal.querySelector(".close").focus();
-return modal;
-
-function close (modal) {
-if (modal.__restoreFocus__) modal.__restoreFocus__.focus();
-document.body.removeChild(modal);
-} // close
-
-function maintainFocus (e) {
-const focusTo = e.relatedTarget, focusFrom = e.target;
-//console.debug("maintainFocus: ", modal, focusFrom, focusTo, focusableElements);
-if (focusTo && modal.contains(focusTo)) return;
-e.preventDefault();
-console.debug("shifting focus...");
-setTimeout(() => focusFrom.focus(), 0);
-} // maintainFocus
-} // displayModal
-
 function removeBlanks (s) {return s.replace(/\s+/g, "");}
+
+function getAllFields(container) {return [...(container.fields ?? container).querySelectorAll(".field")];}
 
 function storeAllFields () {
 document.querySelectorAll(".field").forEach(f => {
@@ -518,4 +361,5 @@ const element = field.querySelector("[data-name]");
 setValue(element, value, "fireChangeEvent");
 });
 } // restoreAllFields
+
 

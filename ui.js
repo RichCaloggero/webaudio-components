@@ -1,6 +1,7 @@
 import {AudioComponent, isAudioParam} from "./audioComponent.js";
 import {storeValue, keyGen} from "./save-restore.js";
 
+// this represents an action (button) with no state; it just returns it's input
 function Action (value) {return value;}
 
 export class Control {
@@ -34,8 +35,16 @@ this.container.innerHTML = `
 <div class="children"></div>
 `;
 
+this.container.fields = this.container.querySelector(".fields");
 this.container.addEventListener("change", createUpdateHandler(this));
 } // constructor
+
+getElementByName (name) {
+console.debug("getElementByName: ", name);
+return (name in this.receiver && this.receiver.hasOwnProperty(name))?
+this.container.querySelector(`.fields > .field [data-name=${name}]`)
+: null;
+} // getElementByName
 
 string ({
 name = "",
@@ -258,4 +267,55 @@ element.value = newStep < s? s - newStep : value;
 return element.value;
 } // adjustStepSize
 
-window.Control = Control;
+export function createModal (options) {
+const title = options.title || "modal";
+const id = {
+title: `${removeBlanks(title)}-title`,
+description: `${removeBlanks(title)}-description`,
+}; // id
+
+const modal = document.createElement("div");
+modal.setAttribute("style", "position: relative");
+
+modal.innerHTML =`
+<div role="dialog" aria-labelledby="${id.title}" style="position:absolute; left: 25%; right: 25%; top: 25%; bottom: 25%;">
+<header>
+<h2 class="title" id="${id.title}">${options.title || ""}</h2>
+<button class="close" aria-label="close">X</button>
+</header>
+<div class="body">
+<div class="description" id="${id.description}">${options.description || ""}</div>
+ ${options.body || ""}
+</div><!-- body -->
+</div><!-- modal -->
+`; // html
+
+return modal;
+} // createModal
+
+export function displayModal (modal) {
+document.body.appendChild(modal);
+
+modal.addEventListener("click", e => e.target.classList.contains("close") && close(modal));
+modal.addEventListener("focusout", maintainFocus);
+modal.addEventListener("keydown", e => e.key === "Escape"? close(modal) : true);
+
+modal.__restoreFocus__ = document.activeElement;
+modal.querySelector(".close").focus();
+return modal;
+
+function close (modal) {
+if (modal.__restoreFocus__) modal.__restoreFocus__.focus();
+document.body.removeChild(modal);
+} // close
+
+function maintainFocus (e) {
+const focusTo = e.relatedTarget, focusFrom = e.target;
+//console.debug("maintainFocus: ", modal, focusFrom, focusTo, focusableElements);
+if (focusTo && modal.contains(focusTo)) return;
+e.preventDefault();
+console.debug("shifting focus...");
+setTimeout(() => focusFrom.focus(), 0);
+} // maintainFocus
+} // displayModal
+

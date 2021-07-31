@@ -2,16 +2,16 @@
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="X-Content-Type-Options" content="nosniff">
+
 <title>Test</title>
 </head>
 <body> 
-
 
 <script type="module">
 import {AudioComponent, audioContext} from "./audioComponent.js";
 import * as audio from "./components.js";
 import * as setop from "./setops.js";
-import {getValue, setValue} from "./binder.js";
 
 const commonOptions = "bypass, silentBypass, mix";
 const media = document.querySelector("audio");
@@ -36,14 +36,15 @@ document.body.appendChild(app.ui.container); // audio.app
 
 function createXtc () {
 return audio.series("title=XTC block; bypass=true; hide=silentBypass; mix=1",
-createBand("title=prefilter; bypass; type=highpass; frequency=500; Q=0.26; gain=1"),
-window.xtc = audio.xtc("delay=0.00007; feedback=0.95; reverseStereo=1; gain=-1"),
-createBand("title=post filter; bypass=true; frequency=1000; gain=1"),
+createBand("title=prefilter band 1; type=lowshelf; frequency=500; Q=0.26; gain=-10"),
+createBand("title=prefilter band 2; type=highshelf; frequency=6000; Q=0.26; gain=-10"),
+audio.xtc("delay=0.00009; feedback=0.85; reverseStereo=1; gain=-1"),
+createBand("title=post filter; type=peaking; frequency=1000; Q=.66; gain=1"),
 ); // series
 } // createXtc
 
 function createBand (options) {
-return audio.series(`title=eQ band; hide=${commonOptions}`,
+return audio.series(`hide=silentBypass, mix`,
 audio.filter(`hide=silentBypass, mix, detune; ${options}`),
 audio.gain(`hide=${commonOptions}; gain=1`)
 ); // series

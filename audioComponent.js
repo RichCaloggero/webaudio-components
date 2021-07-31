@@ -1,6 +1,7 @@
-import {createFields} from "./binder.js";
+import {createFields} from "./ui.js";
 import {intersection, difference} from "./setops.js";
-import {Control} from "./binder.js";
+import {Control} from "./ui.js";
+
 export let audioContext = new AudioContext();
 
 await audioContext.resume();

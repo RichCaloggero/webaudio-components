@@ -1,4 +1,4 @@
-import {setValue} from "./binder.js";
+import {setValue} from "./ui.js";
 import {audioContext} from "./audioComponent.js";
 
 await audioContext.audioWorklet.addModule("./automator.worklet.js");
