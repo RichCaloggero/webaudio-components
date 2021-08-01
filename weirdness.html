@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+
+<title>Weirdness</title>
+</head>
+<body> 
+
+<script type="module">
+const audioContext = new AudioContext();
+await audioContext.audioWorklet.addModule("./weirdness.worklet.js");
+console.log("loaded.");
+const weirdness = new AudioWorkletNode(audioContext, "weirdness");
+weirdness.parameters.get("gain").value = 0.2;
+weirdness.parameters.get("filter").value = Number(prompt("filter: "));
+weirdness.connect(audioContext.destination);
+
+
+const seed = [];
+const seedLength = Number(prompt("seed length: "))
+for (let i=0; i < seedLength; i++) seed[i] = Math.random() * (2**24)-1;
+weirdness.port.postMessage(["seed", seed]);
+
+//setTimeout(() => weirdness.port.postMessage(["seed", [2,4,8,16]]), 2000);
+
+</script>
+
+</body>
+</html>
