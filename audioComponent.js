@@ -381,9 +381,15 @@ if (!component.input && !component.output) component._error("no connections poss
 
 // create getters and setters on component which talk to the webaudio node inside
 webaudioParameterNames(node).forEach(name => {
-const descriptor = {enumerable: true,
+const descriptor = {
+enumerable: true,
 get () {return _get(node, name);},
-set (value) {_set(node, name, value);}
+set (value) {
+_set(node, name, value);
+//if (name === "positionX" || name === "positionZ")
+//console.debug(`${node.Name}: setter.${name} to ${value}`);
+
+} // set
 }; // descriptor
 Object.defineProperty(component, name, descriptor);
 }); // forEach
@@ -439,6 +445,7 @@ const ordering = new Set([
 "type", "frequency", "Q",
 "positionX", "positionY", "positionZ",
 "orientationX", "orientationY", "orientationZ",
+"radius", "angle",
 "gain",
 "delayTime"
 ]); // ordering

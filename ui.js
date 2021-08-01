@@ -171,7 +171,8 @@ field.dataset.value = getValue(element);
 //storeValue(receiver, name, value);
 //if (dataType === Number) value = adjustStepSize(element, Number(value));
 
-//console.debug("in change handler: ", element.tagName, name, dataType, value );
+//if (name === "positionX" || name === "positionZ" || name === "angle" || name === "radius")
+//console.debug("change handler: ", name, value);
 
 if (receiver[name] instanceof Function) receiver[name].call(receiver, dataType(value));
 else updateValue(receiver, name, dataType(value));

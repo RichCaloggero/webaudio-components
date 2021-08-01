@@ -11,11 +11,11 @@ return {name, defaultValue, automator, value};
 
 
 function splitOnBar (s = "") {
-return s? s.split(/\s*\|+\s*/) : "";
+return s? s.split(/\s*\|+\s*/).map(s => s.trim()) : "";
 } // splitOnBar
 
 function splitOnEquals (s = "") {
-return s? s.split(/\s*=+\s*/) : "";
+return s? s.split(/\s*=+\s*/).map(s => s.trim()) : "";
 } // splitOnEquals
 
 function splitOnSemi (s = "") {
@@ -23,5 +23,5 @@ return s.split(/\s*;+\s*/);
 } // splitOnSemi
 
 function splitOnCommaAndSpace (s) {
-return s.split(/,+\s*|,*\s+/).filter(x => x.length>0);
+return s.split(/,+\s*|,*\s+/).filter(x => x.length>0).map(s => s.trim());
 } // splitOnCommaAndSpace

@@ -20,9 +20,10 @@ window.app = audio.app("enableAutomation; automationInterval=0.1",
 audio.series("hide=mix, bypass, silentBypass",
 window.player = audio.player("show=media, play, position; position=1700; media=t.opus"),
 window.panner = audio.panner(`
+polarInput=true;
 radius=1 | 20 * abs(cos(t/3 + 1));
 angle=0 | t/2;
-positionX=0; positionY=0; positionZ=0;
+positionX; positionY; positionZ;
 distanceModel=inverse; maxDistance=100; refDistance=50; rolloffFactor=0.3;
 orientationX=0; orientationY=0; orientationZ=0;
 channelCount=2; panningModel=HRTF;
