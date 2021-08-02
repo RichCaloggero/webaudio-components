@@ -63,7 +63,7 @@ const count = outputBuffer.length / seedLength;
 this.blockCount += 1;
 
 for (let i=0; i <= count; i++) {
-this.buffer = calculate (this.buffer);
+this.buffer = calculate (this.buffer, this._seed);
 if (this.buffer.every(value => value === 0)) {
 console.log(`Stopped at block ${this.blockCount}, itteration ${i}.`);
 return false;
@@ -74,15 +74,15 @@ write(scale(this.buffer, scaleFactor), outputBuffer[0], i);
 
 return true;
 
-function calculate (values) {
-return values.map(value => {
+function calculate (values, seed) {
+return values.map((value, index) => {
 let newValue = value;
 do {
 newValue = clamp(
 newValue % 2 === 0? newValue/2 : 3*newValue+1,
 0, 2**24
 ) // clamp
-newValue = newValue === 1? Math.random() * (2**24-1) : newValue;
+newValue = newValue === 1?  seed[index] : newValue;
 } while(!filter(newValue, _filter));
 
 return newValue;
@@ -104,11 +104,11 @@ function scale (values, f) {return values.map(value => gain * ((f * value) - 1))
 } // process
 } // class xtc
 
+
 registerProcessor("weirdness", Weirdness);
 
 
 /// helpers
-
 
 function lerp (x, y, a) {return x * (1 - a) + y * a;}
 function clamp (a, min = 0, max = 1) {return Math.min(max, Math.max(min, a));}
