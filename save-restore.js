@@ -52,4 +52,3 @@ return localStorage.getItem(keyGen(component, name));
 } // getStoredValue
 
 
-export function keyGen (component, name) {return `${component._id}_${name}`;}

@@ -21,7 +21,7 @@ container.querySelector(".component-title").setAttribute("aria-level", depth);
 } // setDepth
 
 export function storeAllFields () {
-getAllFields.forEach(f => {
+getAllFields().forEach(f => {
 if (f.dataset.dataType === "Action") return;
 localStorage.setItem(f.dataset.storageKey, f.dataset.value);
 });
@@ -39,8 +39,9 @@ setValue(element, value, "fireChangeEvent");
 
 export function getInteractiveElement (name, container) {return container.querySelector(`[data-name=${name}]`);}
 export function getAllFields (root = document) {return [...root.querySelectorAll(".fields > .field")];}
-export function getAllInteractiveElements (root) {return getAllFields(root).map(fieldToElement);}
+export function getAllInteractiveElements (root) {return [...root.querySelectorAll(".fields .field [data-name]")];}
 export function fieldToElement (field) {return field.querySelector("[data-name]");}
 export function elementToField (element) {return element.closest(".field");}
 
+export function keyGen (component, name) {return `${component._id}_${name}`;}
 

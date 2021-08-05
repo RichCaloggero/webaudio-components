@@ -1,6 +1,7 @@
 import * as dom from "./dom.js";
-import {AudioComponent, isAudioParam} from "./audioComponent.js";
-import {storeValue, keyGen} from "./save-restore.js";
+import {AudioComponent} from "./audioComponent.js";
+import {isAudioParam} from "./parameters.js";
+import {storeValue} from "./save-restore.js";
 
 // this represents an action (button) with no state; it just returns it's input
 function Action (value) {return value;}
@@ -137,7 +138,7 @@ control.className = `${dataType.name.toLowerCase()} field ${name}`;
 control.dataset.name = name;
 control.dataset.dataType = dataType.name;
 control.dataset.componentId = receiver._id;
-control.dataset.storageKey = keyGen(receiver, name);
+control.dataset.storageKey = dom.keyGen(receiver, name);
 
 return control;
 } // createControl

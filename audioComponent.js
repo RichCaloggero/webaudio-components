@@ -362,11 +362,6 @@ else if (value < min) value = min;
 return value;
 } // clamp
 
-
-
-export function isAudioParam (node, property) {return node && node[property] instanceof AudioParam;}
-
-
 export function createBufferSource (buffer) {
 if (buffer instanceof AudioBuffer) {
 const source = audioContext.createBufferSource();

@@ -369,7 +369,6 @@ function trimValues(a) {return a.map(x => x.trim());}
 } // applyFieldInitializer
 
 
-
 export function statusMessage (text, append, ignoreQueue) {
 const status = document.querySelector(".root .status, #status");
 if (!status) {
