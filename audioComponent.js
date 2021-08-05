@@ -1,6 +1,3 @@
-import {createFields} from "./ui.js";
-import {intersection, difference} from "./setops.js";
-import {Control} from "./ui.js";
 
 export let audioContext = new AudioContext();
 
@@ -25,7 +22,7 @@ channelCount: {min: 1, max: 2},
 rolloffFactor: {min: 0, step: 0.1},
 gain: {step: 0.02},
 feedBack: {defaultValue: 0, min: -0.95, max: 0.95, step: 0.01},
-delay: {defaultValue: 0, min: 0, max: 1, step: 0.00001}
+delay: {defaultValue: 0, min: 0, max: 1, step: 0.000001}
 }; // constraints
 
 constructor (audio, name, parent = null) {
@@ -366,93 +363,6 @@ return value;
 } // clamp
 
 
-export function wrapWebaudioNode (node) {
-const component = new AudioComponent(node.context, node.constructor.name);
-component.type = "webaudioNode";
-component.webaudioNode = node;
-
-if (node.numberOfInputs > 0) component.input.connect(node);
-else component.input = null;
-
-if (node.numberOfOutputs > 0) node.connect(component.wet);
-else component.output = null;
-
-if (!component.input && !component.output) component._error("no connections possible; both input and output are null");
-
-// create getters and setters on component which talk to the webaudio node inside
-webaudioParameterNames(node).forEach(name => {
-const descriptor = {
-enumerable: true,
-get () {return _get(node, name);},
-set (value) {
-_set(node, name, value);
-//if (name === "positionX" || name === "positionZ")
-//console.debug(`${node.Name}: setter.${name} to ${value}`);
-
-} // set
-}; // descriptor
-Object.defineProperty(component, name, descriptor);
-}); // forEach
-
-// create UI
-const ui = new Control(component, component.name);
-createFields(
-component, ui,
-reorder([...AudioComponent.sharedParameterNames, ...webaudioParameterNames(node)]),
-node
-); // createFields
-
-component.ui = ui;
-return component;
-} // wrapWebaudioNode
-
-function _get (object, name) {
-return isAudioParam(object, name)?
-object[name].value : object[name];
-} // _get
-
-function _set (object, name, value) {
-//console.debug(`_set: ${object}, ${name}, ${value}`);
-if (object && name) {
-isAudioParam(object, name)?
-object[name].value  = value : object[name] = value;
-} // if
-return object;
-} // _set
-
-
-function webaudioParameterNames (node, _exclude = []) {
-const excludedParameterNames = [
-"context",
-"numberOfInputs", "numberOfOutputs",
-"channelCountMode", "channelInterpretation",
-"addEventListener", "removeEventListener"
-];
-const names = [];
-const exclude = new Set(_exclude.concat(excludedParameterNames));
-
-for (name in node) {
-if (node[name] instanceof Function || exclude.has(name)) continue;
-names.push(name);
-} // for
-
-return names;
-} // webaudioParameterNames
-
-function reorder (_names) {
-const ordering = new Set([
-...AudioComponent.sharedParameterNames,
-"type", "frequency", "Q",
-"positionX", "positionY", "positionZ",
-"orientationX", "orientationY", "orientationZ",
-"radius", "angle",
-"gain",
-"delayTime"
-]); // ordering
-
-const names = new Set(_names);
-return [...intersection(names, ordering), ...difference(names, ordering)];
-} // reorder
 
 export function isAudioParam (node, property) {return node && node[property] instanceof AudioParam;}
 

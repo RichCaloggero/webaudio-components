@@ -47,6 +47,7 @@ console.debug(`xtc.worklet ready.`);
 
 process (inputs, outputs, parameters) {
 this.blockCount += 1;
+
 const samples = parameters.delay[0] * sampleRate;
 const delay = Math.floor(samples);
 this.fractionalDelay = samples;
@@ -55,6 +56,8 @@ const dx = samples - delay;
 const gain = parameters.gain[0];
 const reverseStereo = parameters.reverseStereo[0];
 const feedback = parameters.feedback[0];
+this.interpolationEnabled = parameters.interpolationType[0] !== 0;
+
 const inputBuffer = inputs[0];
 const outputBuffer = outputs[0];
 const channelCount = inputBuffer.length;
@@ -197,8 +200,12 @@ return count;
 
 getDelayedSample (channel, dx, sample) {
 if (this.delay === 0) return 0;
+if (this.interpolationEnabled) {
 return this.bufferLength(channel) < 3? this.getDelayedSample_linear(channel, dx, sample) : this.getDelayedSample_cubic(channel, dx, sample);
 //return this.getDelayedSample_cubic(channel, dx, sample);
+} else {
+return this.readBuffer(channel);
+} // if
 } // getDelayedSample
 
 getDelayedSample_linear (channel, dx, sample) {

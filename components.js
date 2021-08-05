@@ -1,6 +1,7 @@
 import {union, intersection, symmetricDifference, difference} from "./setops.js";
 import {Control, update, setValue, createFields} from "./ui.js";
-import {audioContext, AudioComponent, wrapWebaudioNode, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
+import {audioContext, AudioComponent, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
+import {wrapWebaudioNode} from "./parameters.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {addAutomation, getAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
 import {keyboardHandler} from "./keyboardHandler.js";

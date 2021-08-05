@@ -1,5 +1,6 @@
 import {eventToKey} from "./key.js";
 import {displayModal, createModal} from "./ui.js";
+import {update} from "./ui.js";
 
 const savedValues = new Map();
 export function keyboardHandler(e) {
