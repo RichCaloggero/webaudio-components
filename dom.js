@@ -1,6 +1,7 @@
 import {setValue} from "./ui.js";
 
-export function buildDom(component, depth = 1) {
+export function buildDom(component, depth = 1, parent = null) {
+component.parent = parent;
 const dom = component.ui.container;
 const domChildren = dom.querySelector(".children");
 setDepth(dom, depth);
@@ -10,7 +11,8 @@ if (component.children) component.children.forEach(child => {
 domChildren.appendChild(child.ui.container);
 buildDom(
 child,
-dom.getAttribute("role") !== "presentation" && child.type === "container"? depth+1 : depth
+dom.getAttribute("role") !== "presentation" && child.type === "container"? depth+1 : depth,
+component
 ); // buildDom
 }); // forEach child
 } // buildDom

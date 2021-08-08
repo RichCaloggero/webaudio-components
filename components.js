@@ -10,7 +10,6 @@ import * as dom from "./dom.js";
 
 /// root (top level UI)
 
-let _app = null;
 
 export function app (options, child) {
 if (arguments.length === 1) {
@@ -22,8 +21,9 @@ return;
 } // if
 
 options = `show=saveOnExit, storeAll, restoreAll; ${options}`;
-const component = _app = {
+const component = {
 _initialized: false,
+type: "app", 
 _id: `app-${componentId.next().value}`,
 children: [child],
 automationType: "ui",
@@ -391,6 +391,11 @@ if (_function && _function instanceof Function) return _function;
 statusMessage(`Invalid automation function: ${text}`);
 return false;
 } // compile
+
+function getApp (component) {
+while (component.parent) component = component.parent;
+return component ;
+} getApp
 
 function removeBlanks (s) {return s.replace(/\s+/g, "");}
 
