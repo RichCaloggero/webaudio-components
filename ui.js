@@ -1,7 +1,9 @@
 import * as dom from "./dom.js";
 import {AudioComponent} from "./audioComponent.js";
 import {isAudioParam} from "./parameters.js";
-import {storeValue} from "./save-restore.js";
+import {removeBlanks, separateWords} from "./parser.js";
+import {compileFunction} from "./automation.js";
+//import {storeValue} from "./save-restore.js";
 
 // this represents an action (button) with no state; it just returns it's input
 function Action (value) {return value;}
@@ -226,10 +228,6 @@ fields.appendChild(ui.action({name: property}));
 }); // forEach
 } // createFields
 
-function separateWords (text) {
-return text.replace(/([a-z])([A-Z])([a-z])/g, "$1 $2$3");
-} // separateWords
-
 export function getState (button) {
 return button.hasAttribute("aria-pressed")?
 button.getAttribute("aria-pressed") === "true"
@@ -326,3 +324,25 @@ setTimeout(() => focusFrom.focus(), 0);
 } // maintainFocus
 } // displayModal
 
+export function statusMessage (text, append, ignoreQueue) {
+const status = document.querySelector(".root .status, #status");
+if (!status) {
+alert(text);
+return;
+} // if
+
+if (append) {
+status.setAttribute("aria-atomic", "false");
+status.insertAdjacentHTML("beforeEnd", `<p class="message">${text}</p>\n`);
+} else {
+status.setAttribute("aria-atomic", "true");
+status.innerHTML = `<p>${text}</p>`;
+} // if
+} // statusMessage
+
+export function compile (text) {
+const _function = compileFunction(text);
+if (_function && _function instanceof Function) return _function;
+statusMessage(`Invalid automation function: ${text}`);
+return false;
+} // compile

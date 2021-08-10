@@ -1,5 +1,5 @@
 import {union, intersection, symmetricDifference, difference} from "./setops.js";
-import {Control, update, setValue, createFields} from "./ui.js";
+import {Control, update, setValue, createFields, compile, statusMessage} from "./ui.js";
 import {audioContext, AudioComponent, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
 import {wrapWebaudioNode} from "./parameters.js";
 import {parseFieldDescriptor} from "./parser.js";
@@ -63,11 +63,8 @@ component, ui,
 ); // createFields
 
 component.ui = ui;
-
 dom.buildDom(component);
-
 ui.container.addEventListener ("keydown", keyboardHandler);
-
 applyFieldInitializer(options, component);
 
 document.addEventListener("visibilitychange", e => {
@@ -369,33 +366,10 @@ function trimValues(a) {return a.map(x => x.trim());}
 } // applyFieldInitializer
 
 
-export function statusMessage (text, append, ignoreQueue) {
-const status = document.querySelector(".root .status, #status");
-if (!status) {
-alert(text);
-return;
-} // if
-
-if (append) {
-status.setAttribute("aria-atomic", "false");
-status.insertAdjacentHTML("beforeEnd", `<p class="message">${text}</p>\n`);
-} else {
-status.setAttribute("aria-atomic", "true");
-status.innerHTML = `<p>${text}</p>`;
-} // if
-} // statusMessage
-
-function compile (text) {
-const _function = compileFunction(text);
-if (_function && _function instanceof Function) return _function;
-statusMessage(`Invalid automation function: ${text}`);
-return false;
-} // compile
 
 function getApp (component) {
 while (component.parent) component = component.parent;
 return component ;
 } getApp
 
-function removeBlanks (s) {return s.replace(/\s+/g, "");}
 

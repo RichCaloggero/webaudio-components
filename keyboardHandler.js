@@ -1,49 +1,63 @@
 import {eventToKey} from "./key.js";
-import {displayModal, createModal} from "./ui.js";
-import {update} from "./ui.js";
+import {statusMessage, displayModal, createModal, update, compile} from "./ui.js";
+import {addAutomation, getAutomation, removeAutomation} from "./automation.js";
+import {separateWords} from "./parser.js";
 
 const savedValues = new Map();
 export function keyboardHandler(e) {
 // all must be lowercase
 const commands = {
-"control alt shift enter": help,
-"control home": max, "control end": min,
-"control arrowup": increase10, "pageup": increase50,
-"control arrowdown": decrease10, "pagedown": decrease50,
-"control -": negate, "control 0": zero,
-"control space": save, "control shift space": swap,
-"control enter": defineAutomation,
-};
+"control h": {command: help},
+ "f1": {command: help},
+
+"control home": {command: max, type: "numeric"},
+ "control end": {command: min, type: "numeric"},
+"control arrowup": {command: increase10, type: "numeric"},
+ "pageup": {command: increase50, type: "numeric"},
+"control arrowdown": {command: decrease10, type: "numeric"},
+ "pagedown": {command: decrease50, type: "numeric"},
+
+"control -": {command: negate, type: "numeric"},
+ "control 0": {command: zero, type: "numeric"},
+
+"control space": {command: save, type: "numeric"},
+ "control shift space": {command: swap, type: "numeric"},
+
+"enter": {command: defineAutomation, type: "numeric"},
+"control enter": {command: defineStepSize, type: "numeric"},
+}; // commands
 
 const key = eventToKey(e).join(" ");
 //console.debug(`key: ${key}, command: ${commands[key]}`);
 const element = e.target;
 
-if (key in commands && element.tagName.toLowerCase() === "input" && (element.type === "number" || element.type === "range")) {
+if (key in commands
+//&& element.tagName.toLowerCase() === "input"
+) {
 e.preventDefault();
 e.stopPropagation();
 execute(commands[key], element, Number(element.value));
+return false;
 } // if
 
 function execute (command, element, value) {
-command(element, value, commands);
-
-//if (element.validationMessage) {
-//statusMessage(element.validationMessage);
-//element.value = value;
-//} else {
+if (command.type === "numeric") {
+ if (element instanceof HTMLInputElement && (element.type === "number" || element.type === "range")) {
+command.command(element, value, commands);
 update(element);
-//} // if
+} // if
 
-return true;
+} else {
+command.command(element, value, commands);
+} // if
 } // execute
 
 /// commands
 
 function help (element, value, commands) {
-console.log("command keys: ", Object.keys(commands));
+//console.log("command keys: ", Object.keys(commands));
 let message = Object.keys(commands)
-.map(key => `<tr><th>${key}</th> <td> ${commands[key].name || "[no name]"}</td></tr>`)
+.map(key => `<tr><th>${key}</th> <td> ${separateWords(commands[key].command.name) || "[no name]"}</td></tr>`)
 .join("\n");
 
 displayModal(createModal({
@@ -90,5 +104,12 @@ function increase10 (input, value) {input.value = value + 10*Number(input.step);
 function increase50 (input, value) {input.value = value + 50*Number(input.step);}
 function decrease10 (input, value) {input.value = value - 10*Number(input.step);}
 function decrease50 (input, value) {input.value = value - 50*Number(input.step);}
- } // keyboardHandler
+ 
+
+function defineStepSize (input, value) {
+const text = prompt("step size: ", input.step).trim();
+if (!text) return;
+input.step = Number(text) || 1;
+} // defineStepSize
+} // keyboardHandler
 

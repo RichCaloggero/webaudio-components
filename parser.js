@@ -25,3 +25,10 @@ return s.split(/\s*;+\s*/);
 function splitOnCommaAndSpace (s) {
 return s.split(/,+\s*|,*\s+/).filter(x => x.length>0).map(s => s.trim());
 } // splitOnCommaAndSpace
+
+export function separateWords (text) {
+return text ?? text.length > 0?text.replace(/([a-z])([A-Z])([a-z])/g, "$1 $2$3")
+: "";
+} // separateWords
+
+export function removeBlanks (s) {return s.replace(/\s+/g, "");}
