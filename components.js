@@ -1,11 +1,12 @@
 import {union, intersection, symmetricDifference, difference} from "./setops.js";
 import {Control, update, setValue, createFields, compile, statusMessage} from "./ui.js";
 import {audioContext, AudioComponent, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
-import {wrapWebaudioNode} from "./parameters.js";
+import {wrapWebaudioNode, webaudioParameters, reorder} from "./parameters.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {addAutomation, getAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
 import {keyboardHandler} from "./keyboardHandler.js";
 import * as dom from "./dom.js";
+import {publish, subscribe} from "./observer.js";
 
 
 /// root (top level UI)
@@ -77,7 +78,7 @@ statusMessage("State saved.");
 dom.getAllInteractiveElements(ui.container).forEach(element => update(element));
 setTimeout(() => {
 component._initialized = true;
-document.dispatchEvent(new CustomEvent("ready", {bubbles: true}));
+document.dispatchEvent(new CustomEvent("ready", {detail: component, bubbles: true}));
 statusMessage("Ready.");
 }, 5); // give time for dom to settle
 return component;
@@ -131,7 +132,7 @@ return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquad
 } // filter
 
 export function panner (options) {
-const component = wrapWebaudioNode(audioContext.createPanner());
+let component = wrapWebaudioNode(audioContext.createPanner(), "do not create UI");
 
 component._polarInput = false,
 Object.defineProperty(component, "polarInput", {
@@ -141,85 +142,74 @@ set (value) {this._polarInput = Boolean(value);}
 
 component._radius = 0,
 Object.defineProperty(component, "radius", {
+enumerable: true,
 get () {return this._radius;},
 set (value) {
 this._radius = Number(value);
-const p = this.webaudioNode;
-this.positionX = this._radius*Math.cos(this._angle);
-this.positionZ = this._radius*Math.sin(this._angle);
-// update x and y in UI
 } // set
 }); // defineProperty
 
 component._angle = 0;
 Object.defineProperty(component, "angle", {
+enumerable: true,
 get () {return this._angle;},
 set (value) {
-const p = this.webaudioNode;
 this._angle = Number(value);
-this.positionX = this._radius*Math.cos(this._angle);
-this.positionZ = this._radius*Math.sin(this._angle);
 } // set
 }); // defineProperty
+component = publish(component);
 
-createFields(component, component.ui,
-["polarInput", "radius", "angle"]);
+const ui = new Control(component, component.name);
+console.debug("panner: ui = ", ui);
+createFields(
+component, ui, reorder([
+...AudioComponent.sharedParameterNames,
+"polarInput", "radius", "angle",
+...webaudioParameters(component.webaudioNode).map(p => p.name)
+]), // reorder
+component.webaudioNode
+); // createFields
+console.debug("- after createFields: ", ui);
+
+component.ui = ui;
+
 
 document.addEventListener("ready", e => {
-component.ui.container.addEventListener("change", syncCartesianPolar);
-syncCartesianPolar(null);
+if (e.detail === getApp(component)) {
+subscribe(component, "radius", toCartesian);
+subscribe(component, "angle", toCartesian);
+subscribe(component, "positionX", toPolar);
+subscribe(component, "positionZ", toPolar);
+} // if
 }); // ready
-
 
 return applyFieldInitializer(options, component);
 
-function syncCartesianPolar (e) {
-const x = component.ui.nameToElement("positionX"),
-y = component.ui.nameToElement("positionY"),
-z = component.ui.nameToElement("positionZ"),
-r = component.ui.nameToElement("radius"),
-a = component.ui.nameToElement("angle");
-const cartesian = new Set ([x, y, z]);
-const polar = new Set ([r, a]);
+function toCartesian (object) {
+object.positionX = object.radius * Math.cos(object.angle);
+object.positionZ = object.radius * Math.sin(object.angle);
+setCartesianCoordinates(object.positionX, object.positionY, object.positionZ);
+} // toCartesian
 
-/*if (!e || polar.has(e.target) || cartesian.has(e.target)) {
-if (e) console.debug("sync coordinates: ", component.polarInput, e.target.dataset.name, Number(e.target.value));
-console.debug("- UI values: ", Number(x.value), Number(y.value), Number(z.value), Number(r.value), Number(a.value));
-console.debug("- component properties: ", component.positionX, component.positionY, component.positionZ, component.radius, component.angle);
-} // if
-*/
-
-if (component.polarInput ) {
-if (!e || polar.has(e.target)) {
-setCartesianCoordinates (
-component.radius * Math.cos(component.angle),
-component.positionY,
-component.radius * Math.sin(component.angle)
-); // set cartesian
-} // if
-
-} else {
-// not polarInput
-if (!!e || cartesian.has(e.target)) {
-setPolarCoordinates(
-Math.sqrt(Math.pow(component.positionX, 2) + Math.pow(component.positionZ, 2)),
-component.positionZ === 0? 0 : Math.tan(component.positionZ / component.positionX)
-); // set polar
-} // if
-} // if
-} // synchronize polar and cartesian
+function toPolar (object) {
+object.radius = Math.sqrt(Math.pow(object.positionX, 2) + Math.pow(object.positionZ, 2));
+object.angle = object.positionZ === 0? 0 : Math.tan(object.positionZ / object.positionX);
+setPolarCoordinates(object.radius, object.angle);
+} // toPolar
 
 function setCartesianCoordinates (x, y, z) {
 //console.debug("setting cartesian: ", x, y, z);
 setValue(component.ui.nameToElement("positionX"), x);
 setValue(component.ui.nameToElement("positionY"), y);
 setValue(component.ui.nameToElement("positionZ"), z);
+alert(`${x}, ${y}, ${z}`);
 } // setCartesianUI
 
 function setPolarCoordinates (radius, angle) {
 //console.debug("setting polar: ", radius, angle);
 setValue(component.ui.nameToElement("radius"), radius);
 setValue(component.ui.nameToElement("angle"), angle);
+alert(`${radius}, ${angle}`);
 } // setPolarUI
 
 } // panner

@@ -1,12 +1,13 @@
 import {AudioComponent} from "./audioComponent.js";
 import {Control, createFields} from "./ui.js";
 import {intersection, difference} from "./setops.js";
+import {publish} from "./observer.js";
 
 const parameterMap = new Map();
 
-export function wrapWebaudioNode (node) {
-console.debug("wrapping ", node);
-const component = new AudioComponent(node.context, node.constructor.name);
+export function wrapWebaudioNode (node, doNotCreateUi) {
+//console.debug("wrapping ", node);
+let component = new AudioComponent(node.context, node.constructor.name);
 component.type = "webaudioNode";
 component.webaudioNode = node;
 
@@ -32,14 +33,16 @@ Object.defineProperty(component, p.name, descriptor);
 }); // forEach
 
 // create UI
+if (doNotCreateUi) return component;
+
 const ui = new Control(component, component.name);
 createFields(
 component, ui,
 reorder([...AudioComponent.sharedParameterNames, ...webaudioParameters(node).map(p => p.name)]),
 node
 ); // createFields
-
 component.ui = ui;
+
 return component;
 } // wrapWebaudioNode
 
@@ -58,7 +61,7 @@ return object;
 } // _set
 
 
-function webaudioParameters (node, _exclude = []) {
+export function webaudioParameters (node, _exclude = []) {
 const excludedParameterNames = [
 "context",
 "numberOfInputs", "numberOfOutputs",
@@ -93,7 +96,7 @@ isAudioParam(param)
 
 
 
-function reorder (_names) {
+export function reorder (_names) {
 const ordering = new Set([
 ...AudioComponent.sharedParameterNames,
 "type", "frequency", "Q",
