@@ -53,6 +53,15 @@ return proxy;
 function createProxy (object, properties) {
 //console.debug("createProxy: properties: ", properties);
 return new Proxy(object, {
+defineProperty: function (target, property, descriptor, receiver) {
+if (Reflect.defineProperty(...arguments)) {
+properties.set(property, {...newProperty, property});
+return true;
+} else {
+return false;
+} // if
+}, // defineProperty
+
 set: function (target, property, value, receiver) {
 console.debug("in set trap", property, value);
 const subscriptions = properties.has(property)? properties.get(property)
