@@ -202,15 +202,15 @@ function setCartesianCoordinates (x, y, z) {
 setValue(component.ui.nameToElement("positionX"), x);
 setValue(component.ui.nameToElement("positionY"), y);
 setValue(component.ui.nameToElement("positionZ"), z);
-alert(`${x}, ${y}, ${z}`);
-} // setCartesianUI
+//alert(`${x}, ${y}, ${z}`);
+} // setCartesianCoordinates
 
 function setPolarCoordinates (radius, angle) {
 //console.debug("setting polar: ", radius, angle);
 setValue(component.ui.nameToElement("radius"), radius);
 setValue(component.ui.nameToElement("angle"), angle);
-alert(`${radius}, ${angle}`);
-} // setPolarUI
+//alert(`${radius}, ${angle}`);
+} // setPolarCoordinates
 
 } // panner
 
