@@ -54,9 +54,11 @@ function createProxy (object, properties) {
 //console.debug("createProxy: properties: ", properties);
 return new Proxy(object, {
 set: function (target, property, value, receiver) {
-const subscriptions = properties.get(property);
-console.debug("in set trap", property, value, subscriptions);
-if (!subscriptions || subscriptions.callbacks.length === 0) {
+console.debug("in set trap", property, value);
+const subscriptions = properties.has(property)? properties.get(property)
+: (properties.set(property, {...newProperty, property}), console.debug("- added property ", property), properties.get(property));
+
+if (subscriptions.callbacks.length === 0) {
 target[property] = value;
 console.debug("- no subscriptions, so just update target");
 return true;
