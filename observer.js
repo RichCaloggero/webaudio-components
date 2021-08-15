@@ -105,3 +105,12 @@ console.debug("- subscriptions: ", properties.get(property));
 function notify (callbacks, object, property, value) {
 callbacks.forEach(f => f(object, property, value));
 } // notify
+
+export function published (object) {
+return object instanceof HTMLElement? observers.has(object) ?? object
+: (observers.has(object)? object : proxied.get(object));
+} // isPublished
+
+export function subscriptions (object, property) {
+return published(object)? observers.get(published(object)).get(property) : null;
+} // subscriptions
