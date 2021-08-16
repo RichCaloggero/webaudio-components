@@ -132,7 +132,7 @@ return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquad
 } // filter
 
 export function panner (options) {
-let component = wrapWebaudioNode(audioContext.createPanner(), "do not create UI");
+let component = wrapWebaudioNode(audioContext.createPanner(), {publish: true});
 
 component._polarInput = false,
 Object.defineProperty(component, "polarInput", {
@@ -157,10 +157,12 @@ set (value) {
 this._angle = Number(value);
 } // set
 }); // defineProperty
-component = publish(component);
 
+createFields(component, component.ui, ["polarInput", "radius", "angle"]);
+
+/*-delete
+component = publish(component);
 const ui = new Control(component, component.name);
-console.debug("panner: ui = ", ui);
 createFields(
 component, ui, reorder([
 ...AudioComponent.sharedParameterNames,
@@ -169,31 +171,34 @@ component, ui, reorder([
 ]), // reorder
 component.webaudioNode
 ); // createFields
-console.debug("- after createFields: ", ui);
-
 component.ui = ui;
+*/
 
 
-document.addEventListener("ready", e => {
-if (e.detail === getApp(component)) {
+//document.addEventListener("ready", e => {
+//if (e.detail === getApp(component)) {
 subscribe(component, "radius", toCartesian);
 subscribe(component, "angle", toCartesian);
 subscribe(component, "positionX", toPolar);
 subscribe(component, "positionZ", toPolar);
-} // if
-}); // ready
+//} // if
+//}); // ready
 
 return applyFieldInitializer(options, component);
 
 function toCartesian (object) {
-object.positionX = object.radius * Math.cos(object.angle);
-object.positionZ = object.radius * Math.sin(object.angle);
+const r = object.radius, a = object.angle;
+object.positionX = r * Math.cos(a);
+object.positionZ = r * Math.sin(a);
 setCartesianCoordinates(object.positionX, object.positionY, object.positionZ);
 } // toCartesian
 
 function toPolar (object) {
-object.radius = Math.sqrt(Math.pow(object.positionX, 2) + Math.pow(object.positionZ, 2));
-object.angle = object.positionZ === 0? 0 : Math.tan(object.positionZ / object.positionX);
+const x = object.positionX, z = object.positionZ;
+//console.debug("toPolar: ", x, z);
+object.radius = Math.sqrt(Math.pow(x, 2) + Math.pow(z, 2));
+object.angle = x === 0? 0 : Math.atan(z/x);
+if (z < 0) object.angle += Math.PI;
 setPolarCoordinates(object.radius, object.angle);
 } // toPolar
 

@@ -20,7 +20,7 @@ myObject.b = 77;
 */
 
 export function publish (object) {
-console.debug("publishing ", object);
+//console.debug("publishing ", object);
 const properties = new Map();
 const newProperty = {property: "", cachedValue: undefined, callbacks: []};
 
@@ -42,12 +42,12 @@ return object;
 
 Reflect.ownKeys(object).forEach(property => properties.set(property, {...newProperty, property}));
 Reflect.ownKeys(object).forEach(property => properties.set(property, {...newProperty, property}));
-console.debug("- ", properties.size, " properties being published");
+//console.debug("- ", properties.size, " properties being published");
 
 const proxy = createProxy(object, properties);
 observers.set(proxy, properties);
 proxied.set(object, proxy);
-console.debug("- proxy created; returning ...");
+//console.debug("- proxy created; returning ...");
 return proxy;
 
 function createProxy (object, properties) {
@@ -63,20 +63,24 @@ return false;
 }, // defineProperty
 
 set: function (target, property, value, receiver) {
-console.debug("in set trap", property, value);
+//console.debug("in set trap", property, value);
 const subscriptions = properties.has(property)? properties.get(property)
-: (properties.set(property, {...newProperty, property}), console.debug("- added property ", property), properties.get(property));
+: (properties.set(property, {...newProperty, property}), properties.get(property));
+//console.debug("- subscriptions: ", subscriptions);
 
 if (subscriptions.callbacks.length === 0) {
-target[property] = value;
-console.debug("- no subscriptions, so just update target");
+subscriptions.cachedValue = target[property] = value;
+//console.debug("- no subscriptions; updated cache and target");
 return true;
 } // if
 
-if (subscriptions.cachedValue === value) return true;
+if (subscriptions.cachedValue === value) {
+//console.debug("- cached value === value; no update");
+return true;
+} // if
 subscriptions.cachedValue = target[property] = value;
 notify(subscriptions.callbacks, target, property, value);
-console.debug("- updated target...");
+//console.debug("- notified subscribers, and updated cached value and target, ");
 
 return true;
 } // set
@@ -85,10 +89,10 @@ return true;
 } // publish
 
 export function subscribe (object, property, callback) {
-console.debug("subscribe: ", [...arguments]);
+//console.debug("subscribe: ", [...arguments]);
 if (observers.has(object)) {
 const properties = observers.get(object);
-console.debug("- ", properties.size, " properties found");
+//console.debug("- ", properties.size, " properties found");
 if (properties.has(property)) {
 const subscriptions = properties.get(property);
 if (subscriptions.property !== property) throw new Error(`expected property ${property}, got ${subscriptions.property} instead.`);
@@ -97,13 +101,13 @@ const callbacks = callback? [...subscriptions.callbacks, callback] : [];
 if (callbacks.length === 0) console.log("removing subscriptions for property ", property);
 subscriptions.callbacks = callbacks;
 properties.set(property, subscriptions);
-console.debug("- subscriptions: ", properties.get(property));
+//console.debug("- subscriptions: ", properties.get(property));
 } // if
 } // if
 } // subscribe
 
 function notify (callbacks, object, property, value) {
-callbacks.forEach(f => f(object, property, value));
+callbacks.forEach(f => f && f instanceof Function && f(object, property, value));
 } // notify
 
 export function published (object) {
@@ -114,3 +118,4 @@ return object instanceof HTMLElement? observers.has(object) ?? object
 export function subscriptions (object, property) {
 return published(object)? observers.get(published(object)).get(property) : null;
 } // subscriptions
+window.subscriptions = subscriptions;

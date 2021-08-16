@@ -5,7 +5,7 @@ import {publish} from "./observer.js";
 
 const parameterMap = new Map();
 
-export function wrapWebaudioNode (node, doNotCreateUi) {
+export function wrapWebaudioNode (node, options = {}) {
 //console.debug("wrapping ", node);
 let component = new AudioComponent(node.context, node.constructor.name);
 component.type = "webaudioNode";
@@ -32,8 +32,10 @@ _set(p.object, p.name, p.param, value);
 Object.defineProperty(component, p.name, descriptor);
 }); // forEach
 
+if (options.publish) component = publish(component);
+
 // create UI
-if (doNotCreateUi) return component;
+if (options.doNotCreateUi) return component;
 
 const ui = new Control(component, component.name);
 createFields(
