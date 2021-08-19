@@ -158,7 +158,7 @@ this._angle = Number(value);
 } // set
 }); // defineProperty
 
-createFields(component, component.ui, ["polarInput", "radius", "angle"]);
+createFields(component, component.ui, ["polarInput", "radius", "angle"], null, "positionZ");
 
 /*-delete
 component = publish(component);

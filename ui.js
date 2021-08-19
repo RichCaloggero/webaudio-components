@@ -201,11 +201,26 @@ update(e.target);
 }); // click handler
 } // booleanHelper
 
-export function createFields (component, ui, propertyNames, node = null) {
-const fields = ui.container.querySelector(".fields");
-propertyNames.forEach(property => {
+export function createFields (component, ui, propertyNames, node = null, after = "") {
+const container = ui.container.querySelector(".fields");
+const fields = propertyNames.map(createField).filter(field => field);
+//console.debug("createFields: ", fields);
+
+if (after) {
+const afterElement = after instanceof Number? container.children[after]
+: container.querySelector(`.field[data-name=${after}]`);
+
+if (afterElement instanceof HTMLElement && afterElement.matches(".field")) {
+fields.forEach(field => afterElement.insertAdjacentElement("afterEnd", field));
+} // if
+
+} else {
+fields.forEach(field => container.appendChild(field));
+} // if
+
+function createField (property) {
 if (typeof(component[property]) === "number") {
-fields.appendChild(ui.number(
+return (ui.number(
 Object.assign(
 {name: property,
 min: -Infinity, max: Infinity,
@@ -217,15 +232,15 @@ AudioComponent.constraints[property]
 ));
 
 } else if (typeof(component[property]) === "boolean") {
-fields.appendChild(ui.boolean({name: property}));
+return (ui.boolean({name: property}));
 
 } else if (typeof(component[property]) === "string") {
-fields.appendChild(ui.string({name: property}));
+return (ui.string({name: property}));
 
 } else if (component[property] === null) {
-fields.appendChild(ui.action({name: property}));
+return (ui.action({name: property}));
 } // if
-}); // forEach
+} // createField
 } // createFields
 
 export function getState (button) {
