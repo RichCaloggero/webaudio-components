@@ -1,13 +1,12 @@
-import {union, intersection, symmetricDifference, difference} from "./setops.js";
-import {Control, update, setValue, createFields, compile, statusMessage} from "./ui.js";
+import {Control, update, setValue, createFields, statusMessage} from "./ui.js";
 import {audioContext, AudioComponent, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
 import {wrapWebaudioNode, webaudioParameters, reorder} from "./parameters.js";
 import {parseFieldDescriptor} from "./parser.js";
-import {addAutomation, getAutomation, removeAutomation, enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval, compileFunction} from "./automation.js";
+import {getAutomation,  enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval} from "./automation.js";
 import {keyboardHandler} from "./keyboardHandler.js";
 import * as dom from "./dom.js";
 import {publish, subscribe} from "./observer.js";
-
+await audioContext.audioWorklet.addModule("./dattorroReverb.worklet.js");
 
 /// root (top level UI)
 
@@ -64,9 +63,9 @@ component, ui,
 ); // createFields
 
 component.ui = ui;
+applyFieldInitializer(options, component);
 dom.buildDom(component);
 ui.container.addEventListener ("keydown", keyboardHandler);
-applyFieldInitializer(options, component);
 
 document.addEventListener("visibilitychange", e => {
 if (component.saveOnExit && e.target.visibilityState === "hidden") {
@@ -76,11 +75,14 @@ statusMessage("State saved.");
 }); // visibilitychanged
 
 dom.getAllInteractiveElements(ui.container).forEach(element => update(element));
+
 setTimeout(() => {
 component._initialized = true;
 document.dispatchEvent(new CustomEvent("ready", {detail: component, bubbles: true}));
 statusMessage("Ready.");
 }, 5); // give time for dom to settle
+
+
 return component;
 } // app
 
@@ -130,6 +132,12 @@ return applyFieldInitializer(options, component);
 export function filter (options) {
 return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquadFilter()));
 } // filter
+
+export function reverb (options) {
+return applyFieldInitializer(options, wrapWebaudioNode(
+new AudioWorkletNode(audioContext, "dattorroReverb")
+));
+} // reverb
 
 export function panner (options) {
 let component = wrapWebaudioNode(audioContext.createPanner(), {publish: true});
@@ -203,7 +211,7 @@ setPolarCoordinates(object.radius, object.angle);
 } // toPolar
 
 function setCartesianCoordinates (x, y, z) {
-//console.debug("setting cartesian: ", x, y, z);
+console.debug("setting cartesian: ", x, y, z);
 setValue(component.ui.nameToElement("positionX"), x);
 setValue(component.ui.nameToElement("positionY"), y);
 setValue(component.ui.nameToElement("positionZ"), z);
@@ -211,7 +219,7 @@ setValue(component.ui.nameToElement("positionZ"), z);
 } // setCartesianCoordinates
 
 function setPolarCoordinates (radius, angle) {
-//console.debug("setting polar: ", radius, angle);
+console.debug("setting polar: ", radius, angle);
 setValue(component.ui.nameToElement("radius"), radius);
 setValue(component.ui.nameToElement("angle"), angle);
 //alert(`${radius}, ${angle}`);
@@ -287,11 +295,13 @@ if (!fd) return component;
 
 const container = component.ui.container.fields;
 if (!container) return component;
+const ui = component.ui;
 
-const initialized = new Set();
+const initializers = new Set();
 const hide = new Set();
 const show = new Set();
 
+// following this operation, initializers will contain the set of descriptors to be initialized, while show and hide will contain field names
 const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFieldDescriptor(fd) : fd)
 .filter(d => d.name)
 .filter(d => (
@@ -300,52 +310,26 @@ d.name === "hide")? (add(hide, d.defaultValue), false) : true
 (add(show, d.defaultValue), false) : true
 ).filter(d => d.name === "title"?
 (container.parentElement.querySelector(".component-title").textContent = d.defaultValue, false) : true
- ).forEach(initialize);
+ ).forEach(d => initializers.add(d));
+
+// all fields to show if "*" only item in show
+if (show.size === 1 && show.has("*")) {
+show.delete("*");
+container.querySelectorAll(".field").forEach(f => show.add(f.dataset.name));
+} // if
 
 /*if (component.name === "series")
 console.debug("component: ", component,
 	"hide: ", hide,
 "show: ", show,
-"initialized: ", initialized
+"initializers: ", initializers
 );
 */
 
-const fieldsToShow = [...symmetricDifference(
-union(union(initialized, show), AudioComponent.sharedParameterNames),
-hide
-)].map(name => component.ui.nameToField(name))
-.filter(field => field);
-//console.debug("fieldsToShow: ", component.name, container.label, fieldsToShow);
-
-if (fieldsToShow.length === 0) {
-if (component.type === "container") {
-container.parentElement.querySelector(".component-title").hidden = true;
-container.parentElement.setAttribute("role", "presentation");
-} // if
-
-} else {
-fieldsToShow.forEach(field => field.hidden = false); // forEach
-} // if
-
+ui._show = show;
+ui._hide = hide;
+ui._initializers = initializers;
 return component;
-
-function initialize (d) {
-//console.debug("initializer: ", d);
-const {name, defaultValue, automator} = d;
-const element = component.ui.nameToElement(name);
-
-if (element) {
-initialized.add(name);
-if (element.dataset.datatype === "action") return;
-
-if (defaultValue && defaultValue.length > 0) setValue(element, defaultValue);
-if (automator) addAutomation(element, automator, compile(automator));
-
-//console.debug("descriptor: ", name, defaultValue, element);
-} else {
-throw new Error(`field ${name} not found in ${container.className}`);
-} // if
-} // initialize
 
 function add (set, values) {
 addValues(set, trimValues(values.split(",")));
@@ -359,6 +343,7 @@ values.forEach(x => s.add(x));
 function trimValues(a) {return a.map(x => x.trim());}
 
 } // applyFieldInitializer
+
 
 
 

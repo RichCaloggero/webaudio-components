@@ -65,27 +65,38 @@ return object;
 
 export function webaudioParameters (node, _exclude = []) {
 const excludedParameterNames = [
-"context",
+"context", "port", "parameters",
 "numberOfInputs", "numberOfOutputs",
 "channelCountMode", "channelInterpretation",
 "addEventListener", "removeEventListener"
 ];
-let params = [];
 const exclude = new Set(_exclude.concat(excludedParameterNames));
 
-for (let name in node) {
-params.push({object: node, name, param: node[name]});
-} // for
+const allProps = allProperties(node).filter(p => !exclude.has(p));
+const allMapped = (node.parameters && node.parameters instanceof AudioParamMap)? [...node.parameters.keys()] : [];
+const params = validParameters(node, allProps, allMapped);
+//console.debug("webaudioParameters: ", params);
+return params;
 
-if (node.parameters && node.parameters instanceof AudioParamMap) {
-[...node.parameters.keys()].forEach(name => 
-params.push({name, object: node.parameters, param: node.parameters[name]}));
-} // if
-
-return params
+function validParameters (node, all, mapped) {
+const params = all.map(name => ({name, object: node, param: node[name]}))
+.concat(mapped.map(name => ({name, object: node.parameters, param: node.parameters.get(name)})))
 .filter(p => !exclude.has(p.name))
-.filter(p => isParameter(p.param))
+.filter(p => isParameter(p.param));
+
+if (mapped && mapped.length > 0) console.debug("validParameters: ", params);
+return params;
+} // validParameters
 } // webaudioParameters
+
+function allProperties (node) {
+let props = [];
+for (let name in node) {
+props.push(name);
+} // for
+return props;
+} // allProperties
+
 
 function isParameter (param) {
 return isFunction(param) || isAudioParamMap(param)? false

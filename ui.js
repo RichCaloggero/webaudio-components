@@ -1,6 +1,6 @@
 import * as dom from "./dom.js";
 import {AudioComponent} from "./audioComponent.js";
-import {isAudioParam} from "./parameters.js";
+import {isNumber, isString, isFunction, isAudioParam, isAudioParamMap} from "./parameters.js";
 import {removeBlanks, separateWords} from "./parser.js";
 import {compileFunction} from "./automation.js";
 //import {storeValue} from "./save-restore.js";
@@ -203,7 +203,7 @@ update(e.target);
 
 export function createFields (component, ui, propertyNames, node = null, after = "") {
 const container = ui.container.querySelector(".fields");
-const fields = propertyNames.map(createField).filter(field => field);
+const fields = propertyNames.map(name => createField(component, node, name)).filter(field => field);
 //console.debug("createFields: ", fields);
 
 if (after) {
@@ -211,25 +211,20 @@ const afterElement = after instanceof Number? container.children[after]
 : container.querySelector(`.field[data-name=${after}]`);
 
 if (afterElement instanceof HTMLElement && afterElement.matches(".field")) {
-fields.forEach(field => afterElement.insertAdjacentElement("afterEnd", field));
+fields.reverse().forEach(field => afterElement.insertAdjacentElement("afterEnd", field));
 } // if
 
 } else {
 fields.forEach(field => container.appendChild(field));
 } // if
 
-function createField (property) {
+function createField (component, node, property) {
 if (typeof(component[property]) === "number") {
-return (ui.number(
-Object.assign(
-{name: property,
-min: -Infinity, max: Infinity,
-defaultValue: node?
-(isAudioParam(node, property)? node[property].defaultValue : node[property])
-: 0},
-AudioComponent.constraints[property]
-) // assign
-));
+const constraints = calculateConstraints(node, property);
+if (!node) constraints.defaultValue = component[property];
+//if (property === "bandwidth") debugger;
+
+return ui.number(Object.assign({}, constraints, AudioComponent.constraints[property]));
 
 } else if (typeof(component[property]) === "boolean") {
 return (ui.boolean({name: property}));
@@ -240,6 +235,25 @@ return (ui.string({name: property}));
 } else if (component[property] === null) {
 return (ui.action({name: property}));
 } // if
+
+function calculateConstraints (node, property) {
+let constraints = {name: property, min: -Infinity, max: Infinity, step: 0.1, defaultValue: 0.0};
+if (!node) return constraints;
+
+const p = node[property] || node.parameters?.get(property) || null;
+if (!p) return constraints;
+
+if (isAudioParam(p)) return {
+name: property,
+min: p.minValue,
+max: p.maxValue,
+defaultValue: p.defaultValue,
+step: calculateStepSize(p.defaultValue)
+};
+
+constraints.defaultValue = isNumber(p)?p : 0;
+return constraints;
+} // calculateConstraints
 } // createField
 } // createFields
 
@@ -270,6 +284,15 @@ if (fireChangeEvent) update(element);
 } // setValue
 
 function nullish (value) {return value === null || value === undefined || value === "";}
+
+export function calculateStepSize (value) {
+const s = 1;
+
+const n = value === 0?
+(0 <= value? -1 : 1)
+: Math.floor(Math.log10(value));
+return  10**(n-1);
+} // calculateStepSize
 
 function adjustStepSize (element, value) {
 const s = Number(element.step);
