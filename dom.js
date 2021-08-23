@@ -1,7 +1,8 @@
 import {AudioComponent} from "./audioComponent.js";
-import {compile, setValue} from "./ui.js";
+import {compile, setValue, getState} from "./ui.js";
 import {addAutomation, removeAutomation, compileFunction} from "./automation.js";
 import {union, intersection, symmetricDifference, difference} from "./setops.js";
+
 
 export function buildDom(component, depth = 1, parent = null) {
 component.parent = parent;
@@ -29,14 +30,14 @@ container.querySelector(".component-title").setAttribute("aria-level", depth);
 } // setDepth
 
 function showFields (component) {
-console.debug("showFields: ", component);
+//console.debug("showFields: ", component);
 const ui = component.ui;
-const container = ui.container.fields;
+if (!ui._initializers) return;
 const initializers = ui._initializers;
 const initialized = new Set();
 const hide = ui._hide;
 const show = ui._show;
-if (!initializers && !hide && !show) return;
+const container = ui.container.fields;
 
 initializers.forEach(initialize);
 
@@ -57,8 +58,16 @@ container.parentElement.setAttribute("role", "presentation");
 fieldsToShow.forEach(field => field.hidden = false);
 } // if
 
+const bypass = component.ui.nameToField("bypass");
+if (bypass) {
+const hideOnBypass = fieldsToShow
+.filter(x => x.dataset.name !== "bypass")
+.filter(x => x.dataset.name !== "silentBypass");
+bypass.addEventListener("change", e => hideOnBypass.forEach(x => x.hidden = getState(e.target)));
+} // if
+
 function initialize (d) {
-console.debug("initializer: ", d);
+//console.debug("initializer: ", d);
 const {name, defaultValue, automator} = d;
 const element = component.ui.nameToElement(name);
 

@@ -5,6 +5,7 @@ import {parseFieldDescriptor} from "./parser.js";
 import {getAutomation,  enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval} from "./automation.js";
 import {keyboardHandler} from "./keyboardHandler.js";
 import * as dom from "./dom.js";
+import {union} from "./setops.js";
 import {publish, subscribe} from "./observer.js";
 await audioContext.audioWorklet.addModule("./dattorroReverb.worklet.js");
 
@@ -84,6 +85,8 @@ statusMessage("Ready.");
 
 
 return component;
+
+
 } // app
 
 
@@ -300,6 +303,8 @@ const ui = component.ui;
 const initializers = new Set();
 const hide = new Set();
 const show = new Set();
+const alwaysShow = new Set(["bypass"]);
+
 
 // following this operation, initializers will contain the set of descriptors to be initialized, while show and hide will contain field names
 const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFieldDescriptor(fd) : fd)
@@ -312,21 +317,13 @@ d.name === "hide")? (add(hide, d.defaultValue), false) : true
 (container.parentElement.querySelector(".component-title").textContent = d.defaultValue, false) : true
  ).forEach(d => initializers.add(d));
 
-// all fields to show if "*" only item in show
+// show all fields if show contains exactly one "*"
 if (show.size === 1 && show.has("*")) {
 show.delete("*");
 container.querySelectorAll(".field").forEach(f => show.add(f.dataset.name));
 } // if
 
-/*if (component.name === "series")
-console.debug("component: ", component,
-	"hide: ", hide,
-"show: ", show,
-"initializers: ", initializers
-);
-*/
-
-ui._show = show;
+ui._show = union(show, alwaysShow);
 ui._hide = hide;
 ui._initializers = initializers;
 return component;

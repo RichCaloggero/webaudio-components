@@ -196,7 +196,6 @@ element.dispatchEvent(new CustomEvent("change", {bubbles: true}));
 function booleanHelper (element) {
 element.addEventListener("click", e => {
 setState(e.target, !getState(e.target));
-//e.target.dispatchEvent(new CustomEvent("change", {bubbles: true}));
 update(e.target);
 }); // click handler
 } // booleanHelper
@@ -294,21 +293,6 @@ const n = value === 0?
 return  10**(n-1);
 } // calculateStepSize
 
-function adjustStepSize (element, value) {
-const s = Number(element.step);
-//console.debug("step initial: ", value, s);
-
-const n = value === 0?
-(0 <= value? -1 : 1)
-: Math.floor(Math.log10(value));
-const newStep = 10**n;
-
-element.step = newStep;
-element.value = newStep < s? s - newStep : value;
-//console.debug("- new: ", n, newStep, Number(element.value));
-
-return element.value;
-} // adjustStepSize
 
 export function createModal (options) {
 const title = options.title || "modal";
