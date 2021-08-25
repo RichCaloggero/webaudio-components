@@ -10,7 +10,6 @@ const dom = component.ui.container;
 const domChildren = dom.querySelector(".children");
 
 setDepth(dom, depth);
-showFields(component);
 //console.debug("build: ", depth, dom);
 
 if (component.children) component.children.forEach(child => {
@@ -29,7 +28,7 @@ function setDepth (container, depth) {
 container.querySelector(".component-title").setAttribute("aria-level", depth);
 } // setDepth
 
-function showFields (component) {
+export function showFields (component) {
 //console.debug("showFields: ", component);
 const ui = component.ui;
 if (!ui._initializers) return;
@@ -58,6 +57,7 @@ container.parentElement.setAttribute("role", "presentation");
 fieldsToShow.forEach(field => field.hidden = false);
 } // if
 
+// handle hide on bypass
 const bypass = component.ui.nameToField("bypass");
 if (bypass) {
 const hideOnBypass = fieldsToShow
@@ -67,7 +67,6 @@ bypass.addEventListener("change", e => hideOnBypass.forEach(x => x.hidden = getS
 } // if
 
 function initialize (d) {
-//console.debug("initializer: ", d);
 const {name, defaultValue, automator} = d;
 const element = component.ui.nameToElement(name);
 
@@ -75,10 +74,9 @@ if (element) {
 initialized.add(name);
 if (element.dataset.datatype === "action") return;
 
-if (defaultValue && defaultValue.length > 0) setValue(element, defaultValue);
+if (defaultValue) setValue(element, defaultValue, "fire change event");
 if (automator) addAutomation(element, automator, compile(automator));
 
-//console.debug("descriptor: ", name, defaultValue, element);
 } else {
 throw new Error(`field ${name} not found in ${container.className}`);
 } // if

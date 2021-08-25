@@ -189,9 +189,6 @@ if (property instanceof Function) property.call(receiver, value);
 else receiver[property] = value;
 } // updateValue
 
-export function update (element) {
-element.dispatchEvent(new CustomEvent("change", {bubbles: true}));
-} // update
 
 function booleanHelper (element) {
 element.addEventListener("click", e => {
@@ -281,6 +278,11 @@ element.value = value;
 
 if (fireChangeEvent) update(element);
 } // setValue
+
+export function update (element) {
+element.dispatchEvent(new CustomEvent("change", {bubbles: true}));
+} // update
+
 
 function nullish (value) {return value === null || value === undefined || value === "";}
 

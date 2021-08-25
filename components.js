@@ -9,8 +9,8 @@ import {union} from "./setops.js";
 import {publish, subscribe} from "./observer.js";
 await audioContext.audioWorklet.addModule("./dattorroReverb.worklet.js");
 
-/// root (top level UI)
 
+/// app (top level UI)
 
 export function app (options, child) {
 if (arguments.length === 1) {
@@ -75,9 +75,11 @@ statusMessage("State saved.");
 } // if
 }); // visibilitychanged
 
+//console.debug("app: updating all ...");
 dom.getAllInteractiveElements(ui.container).forEach(element => update(element));
 
 setTimeout(() => {
+walkComponentTree(component, dom.showFields);
 component._initialized = true;
 document.dispatchEvent(new CustomEvent("ready", {detail: component, bubbles: true}));
 statusMessage("Ready.");
@@ -214,7 +216,7 @@ setPolarCoordinates(object.radius, object.angle);
 } // toPolar
 
 function setCartesianCoordinates (x, y, z) {
-console.debug("setting cartesian: ", x, y, z);
+//console.debug("setting cartesian: ", x, y, z);
 setValue(component.ui.nameToElement("positionX"), x);
 setValue(component.ui.nameToElement("positionY"), y);
 setValue(component.ui.nameToElement("positionZ"), z);
@@ -222,7 +224,7 @@ setValue(component.ui.nameToElement("positionZ"), z);
 } // setCartesianCoordinates
 
 function setPolarCoordinates (radius, angle) {
-console.debug("setting polar: ", radius, angle);
+//console.debug("setting polar: ", radius, angle);
 setValue(component.ui.nameToElement("radius"), radius);
 setValue(component.ui.nameToElement("angle"), angle);
 //alert(`${radius}, ${angle}`);
@@ -303,7 +305,7 @@ const ui = component.ui;
 const initializers = new Set();
 const hide = new Set();
 const show = new Set();
-const alwaysShow = new Set(["bypass"]);
+const alwaysShow = new Set(["bypass", "silentBypass"]);
 
 
 // following this operation, initializers will contain the set of descriptors to be initialized, while show and hide will contain field names
@@ -349,4 +351,9 @@ while (component.parent) component = component.parent;
 return component ;
 } getApp
 
+function walkComponentTree (component, _function) {
+//if (!(component instanceof AudioComponent)) throw new Error("walkComponentTree: not an AudioComponent");
+_function (component);
+if (component.children) component.children.forEach(c => walkComponentTree(c, _function));
+} // walkComponentTree
 
