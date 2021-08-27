@@ -59,12 +59,24 @@ fieldsToShow.forEach(field => field.hidden = false);
 
 // handle hide on bypass
 const bypass = component.ui.nameToField("bypass");
-if (bypass) {
-const hideOnBypass = fieldsToShow
-.filter(x => x.dataset.name !== "bypass")
+const hideOnBypass = bypass
+&& fieldsToShow.filter(x => x.dataset.name !== "bypass")
 .filter(x => x.dataset.name !== "silentBypass");
-bypass.addEventListener("change", e => hideOnBypass.forEach(x => x.hidden = getState(e.target)));
+
+if (bypass) {
+console.debug("hideOnBypass for ", component.name, " / ", component.ui.label, " / ", component._id);
+console.debug("- ", hideOnBypass.length, " fields");
+
+bypass.addEventListener("change", e => handleHideOnBypass(e.target));
+handleHideOnBypass(bypass);
 } // if
+return;
+
+function handleHideOnBypass (bypass) {
+const newState = getState(fieldToElement(bypass));
+hideOnBypass.forEach(x => x.hidden = newState)
+console.debug(`handleHideOnBypass: ${component.name}, ${hideOnBypass.length}, ${newState}`);
+} // handleHideOnBypass
 
 function initialize (d) {
 const {name, defaultValue, automator} = d;

@@ -23,6 +23,7 @@ return;
 
 options = `show=saveOnExit, storeAll, restoreAll; ${options}`;
 const component = {
+name: "app",
 _initialized: false,
 type: "app", 
 _id: `app-${componentId.next().value}`,
