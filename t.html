@@ -14,11 +14,10 @@ import * as audio from "./components.js";
 import * as setop from "./setops.js";
 
 const commonOptions = "bypass, silentBypass, mix";
-const media = document.querySelector("audio");
 
 window.app = audio.app("enableAutomation; automationInterval=0.1",
 audio.series("hide=mix, bypass, silentBypass",
-window.player = audio.player("show=media, play, position; position=1700; media=t.opus"),
+window.player = audio.player("show=media, play, position; media=media/t.flac"),
 window.panner = audio.panner(`
 bypass=true;
 polarInput=true;
@@ -30,14 +29,14 @@ channelCount=2; panningModel=HRTF;
 show=positionX, positionY, positionZ;
 hide=panningModel, orientationX, orientationY, orientationZ
 `),
-window.xtc = createXtc("bypass=true"),
+window.xtc = audio.xtc("show=*"),
 //audio.reverb("title=Reverb; show=*"),
 audio.destination()
 ) // series
 );
 document.body.appendChild(app.ui.container); // audio.app
 
-function createXtc () {
+/*function createXtc () {
 return audio.series("title=XTC block; bypass=true; hide=silentBypass; mix=1",
 createBand("title=prefilter band 1; type=lowshelf; frequency=500; Q=0.26; gain=-10"),
 createBand("title=prefilter band 2; type=highshelf; frequency=6000; Q=0.26; gain=-10"),
@@ -52,6 +51,7 @@ audio.filter(`hide=silentBypass, mix, detune; ${options}`),
 audio.gain(`hide=${commonOptions}; gain=1`)
 ); // series
 } // createBand
+*/
 
 </script>
 

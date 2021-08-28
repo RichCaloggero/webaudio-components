@@ -20,6 +20,7 @@ else component.output = null;
 if (!component.input && !component.output) component._error("no connections possible; both input and output are null");
 
 // create getters and setters on component which talk to the webaudio node inside
+//debugger;
 webaudioParameters(node).forEach(p => {
 //console.debug("creating descriptor: ", p);
 const descriptor = {

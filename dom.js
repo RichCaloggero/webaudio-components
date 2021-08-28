@@ -67,7 +67,7 @@ if (bypass) {
 console.debug("hideOnBypass for ", component.name, " / ", component.ui.label, " / ", component._id);
 console.debug("- ", hideOnBypass.length, " fields");
 
-bypass.addEventListener("change", e => handleHideOnBypass(e.target));
+bypass.addEventListener("change", () => handleHideOnBypass(bypass));
 handleHideOnBypass(bypass);
 } // if
 return;

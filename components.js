@@ -246,10 +246,7 @@ return applyFieldInitializer(options, component);
 } // delay
 
 export function xtc (options = `
-bypass; mix=.3; gain=-1.3; delay=0.00009; feedback=0.9; reverseStereo=1;
-lowType=peaking; lowFrequency=500; lowGain=-30; lowQ=0.266;
-midType=bandpass; midFrequency=950; midGain=-4; midQ=0.66;
-highType=peaking; highFrequency=8000; highGain=-30; highQ=0.266;
+bypass; mix=0.3; delay=0.00009; feedback=0.9; reverseStereo=1;
 `) {
 const component = new Xtc(audioContext);
 const ui = new Control(component, "xtc");
@@ -257,10 +254,9 @@ const ui = new Control(component, "xtc");
 createFields(
 component, ui,
 [...AudioComponent.sharedParameterNames,
-"delay", "feedback", "gain", "reverseStereo",
-"lowType", "lowFrequency", "lowGain", "lowQ",
-"midType", "midFrequency", "midGain", "midQ",
-"highType", "highFrequency", "highGain", "highQ"
+"delay", "feedback", "reverseStereo",
+"preType", "preFrequency", "preQ", "preGain",
+"postType", "postFrequency", "postQ", "postGain"
 ]); // createFields
 
 component.ui = ui;
@@ -353,7 +349,6 @@ return component ;
 } getApp
 
 function walkComponentTree (component, _function) {
-//if (!(component instanceof AudioComponent)) throw new Error("walkComponentTree: not an AudioComponent");
 _function (component);
 if (component.children) component.children.forEach(c => walkComponentTree(c, _function));
 } // walkComponentTree

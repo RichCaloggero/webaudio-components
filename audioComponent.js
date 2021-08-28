@@ -1,4 +1,3 @@
-
 export let audioContext = new AudioContext();
 
 await audioContext.resume();
@@ -22,7 +21,8 @@ channelCount: {min: 1, max: 2},
 rolloffFactor: {min: 0, step: 0.1},
 gain: {step: 0.02},
 feedBack: {defaultValue: 0, min: -0.95, max: 0.95, step: 0.01},
-delay: {defaultValue: 0, min: 0, max: 1, step: 0.000001}
+delay: {defaultValue: 0, min: 0, max: 1, step: 0.000001},
+
 }; // constraints
 
 constructor (audio, name, parent = null) {
@@ -112,57 +112,64 @@ console.error(message);
 export class Xtc extends AudioComponent {
 constructor (audio) {
 super (audio, "xtc");
-this.low = audio.createBiquadFilter();
-this.mid = audio.createBiquadFilter();
-this.high = audio.createBiquadFilter();
+this.pre = audio.createBiquadFilter();
+this.post = audio.createBiquadFilter();
+this._preGain = audio.createGain();
+this._postGain = audio.createGain();
 this.xtc = new AudioWorkletNode(audio, "xtc");
+this._filterGainTypes = ["lowshelf", "highshelf", "peaking"];
 
 this.input
-//.connect(this.low).connect(this.mid).connect(this.high)
-.connect(this.xtc).connect(this.wet);
+.connect(this.pre)
+.connect(this._preGain)
+.connect(this.xtc)
+.connect(this.post)
+.connect(this._postGain)
+.connect(this.wet);
 } // constructor
 
 get reverseStereo () {return this.xtc.parameters.get("reverseStereo").value !== 0;}
-get gain () {return this.xtc.parameters.get("gain").value;}
-get delay () {return this.xtc.parameters.get("delay").value;}
-get feedback () {return this.xtc.parameters.get("feedback").value;}
+set reverseStereo (value) {this.xtc.parameters.get("reverseStereo").value = !!value? 1 : 0;}
 
-set reverseStereo (value) {this.xtc.parameters.get("reverseStereo").value = Number(value? 1 : 0);}
-set gain (value) {this.xtc.parameters.get("gain").value = value;}
+get delay () {return this.xtc.parameters.get("delay").value;}
 set delay (value) {this.xtc.parameters.get("delay").value = value;}
+
+get feedback () {return this.xtc.parameters.get("feedback").value;}
 set feedback (value) {this.xtc.parameters.get("feedback").value = value;}
 
+get preGain () {return this._usingFilterGain(this.pre)? this.pre.gain.value : this._preGain.gain.value;}
+set preGain (value) {
+(this._usingFilterGain(this.pre)? this.pre.gain : this._preGain)
+.value = value;
+} // set preGain
+
+get postGain () {return this._usingFilterGain(this.post)? this.post.gain.value : this._postGain.gain.value;}
+set postGain (value) {
+(this._usingFilterGain(this.post)? this.post.gain : this._postGain)
+.value = value;
+} // set postGain
+
+_usingFilterGain (filter) {return this._filterGainTypes.includes(filter.type);}
+
 // exposed filter parameters
-/*get lowFrequency () {return this.low.frequency.value;}
-get lowQ () {return this.low.Q.value;}
-get lowGain() {return this.low.frequency.value;}
-get lowType() {return this.low.type;}
+get preType () {return this.pre.type;}
+set preType (value) {this.pre.type = value;}
 
-get midFrequency () {return this.mid.frequency.value;}
-get midQ () {return this.mid.Q.value;}
-get midGain() {return this.mid.frequency.value;}
-get midType() {return this.mid.type;}
+get postType () {return this.post.type;}
+set postType (value) {this.post.type = value;}
 
-get highFrequency () {return this.high.frequency.value;}
-get highQ () {return this.high.Q.value;}
-get highGain() {return this.high.gain.value;}
-get highType() {return this.high.type;}
+get preFrequency () {return this.pre.frequency.value;}
+set preFrequency (value) {this.pre.frequency.value = value;}
 
-set lowFrequency (value) {this.low.frequency.value = value;}
-set lowQ (value) {this.low.Q.value = value;}
-set lowGain(value) {this.low.gain.value = value;}
-set lowType (value) {this.low.type = value;}
+get preQ () {return this.pre.Q.value;}
+set preQ (value) {this.pre.Q.value = value;}
 
-set midFrequency (value) {this.mid.frequency.value = value;}
-set midQ (value) {this.mid.Q.value = value;}
-set midGain(value) {this.mid.gain.value = value;}
-set midType (value) {this.mid.type = value;}
+get postFrequency () {return this.post.frequency.value;}
+set postFrequency (value) {return this.post.frequency.value = value;}
 
-set highFrequency (value) {this.high.frequency.value = value;}
-set highQ (value) {this.high.Q.value = value;}
-set highGain(value) {this.high.gain.value = value;}
-set highType (value) {this.high.type = value;}
-*/
+get postQ () {return this.post.Q.value;}
+set postQ (value) {return this.post.Q.value = value;}
+
 } // class Xtc
 
 export class Player extends AudioComponent {

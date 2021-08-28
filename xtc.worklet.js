@@ -89,7 +89,7 @@ this.last[channel][1] = this.last[channel][0];
 this.last[channel][0] = sample;
 
 if (delay === 0) {
-writeOutputSample(channel, i, gain * sample);
+writeOutputSample(channel, i, -1*sample);
 
 } else {
 const delayedSample = this.getDelayedSample(channel, dx, sample);
@@ -97,7 +97,7 @@ const delayedSample = this.getDelayedSample(channel, dx, sample);
 this.writeBuffer(channel, sample + feedback*delayedSample);
 //console.debug(`wrote sample ${i}, length ${this.bufferLength(channel)}`);
 
-writeOutputSample(channel, i, 0.5 * gain * (delayedSample));
+writeOutputSample(channel, i, -0.5*delayedSample);
 } // if
 
 } // loop over samples
