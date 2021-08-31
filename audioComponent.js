@@ -121,15 +121,13 @@ this._filterGainTypes = ["lowshelf", "highshelf", "peaking"];
 
 this.input
 .connect(this.pre)
-.connect(this._preGain)
+//.connect(this._preGain)
 .connect(this.xtc)
 .connect(this.post)
-.connect(this._postGain)
+//.connect(this._postGain)
 .connect(this.wet);
 } // constructor
 
-get reverseStereo () {return this.xtc.parameters.get("reverseStereo").value !== 0;}
-set reverseStereo (value) {this.xtc.parameters.get("reverseStereo").value = !!value? 1 : 0;}
 
 get delay () {return this.xtc.parameters.get("delay").value;}
 set delay (value) {this.xtc.parameters.get("delay").value = value;}
@@ -137,17 +135,17 @@ set delay (value) {this.xtc.parameters.get("delay").value = value;}
 get feedback () {return this.xtc.parameters.get("feedback").value;}
 set feedback (value) {this.xtc.parameters.get("feedback").value = value;}
 
-get preGain () {return this._usingFilterGain(this.pre)? this.pre.gain.value : this._preGain.gain.value;}
-set preGain (value) {
-(this._usingFilterGain(this.pre)? this.pre.gain : this._preGain)
-.value = value;
-} // set preGain
+get preFilterGain () {return this.pre.gain.value;}
+set preFilterGain (value) {this.pre.gain.value = value;}
 
-get postGain () {return this._usingFilterGain(this.post)? this.post.gain.value : this._postGain.gain.value;}
-set postGain (value) {
-(this._usingFilterGain(this.post)? this.post.gain : this._postGain)
-.value = value;
-} // set postGain
+get postFilterGain () {return this.post.gain.value;}
+set postFilterGain (value) {this.post.gain.value = value;}
+
+//get preGain () {return this._preGain.gain.value;}
+//set preGain (value) {this._preGain.gain.value = value;}
+//get postGain () {return this._postGain.gain.value;}
+//set postGain (value) {this._postGain.gain.value = value;}
+
 
 _usingFilterGain (filter) {return this._filterGainTypes.includes(filter.type);}
 

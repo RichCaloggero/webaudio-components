@@ -17,12 +17,6 @@ minValue: -1.0,
 maxValue: 1.0,
 automationRate: "k-rate"
 }, {
-name: "reverseStereo",
-defaultValue: 0,
-minValue: 0,
-maxValue: 1,
-automationRate: "k-rate"
-}, {
 name: "interpolationType",
 defaultValue: 0.0,
 minValue: 0,
@@ -54,14 +48,12 @@ this.fractionalDelay = samples;
 const dx = samples - delay;
 
 const gain = parameters.gain[0];
-const reverseStereo = parameters.reverseStereo[0];
 const feedback = parameters.feedback[0];
 this.interpolationEnabled = parameters.interpolationType[0] !== 0;
 
 const inputBuffer = inputs[0];
 const outputBuffer = outputs[0];
 const channelCount = inputBuffer.length;
-//console.debug("reverse: ", reverseStereo, chan(0));
 
 if (channelCount > 2) {
 console.error("channel count must be <= 2");
@@ -108,14 +100,8 @@ writeOutputSample(channel, i, -0.5*delayedSample);
 return true;
 
 function writeOutputSample (channel, i, value) {
-outputBuffer[chan(channel)][i] = value;
+outputBuffer[oppositChannel(channel)][i] = value;
 } // writeOutput
-
-function chan (n) {
-return reverseStereo === 0? n : oppositChannel(n);
-} // chan
-
-
 } // process
 
 initializeDelayBuffer () {

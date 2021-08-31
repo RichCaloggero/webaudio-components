@@ -189,14 +189,10 @@ component.ui = ui;
 */
 
 
-//document.addEventListener("ready", e => {
-//if (e.detail === getApp(component)) {
 subscribe(component, "radius", toCartesian);
 subscribe(component, "angle", toCartesian);
 subscribe(component, "positionX", toPolar);
 subscribe(component, "positionZ", toPolar);
-//} // if
-//}); // ready
 
 return applyFieldInitializer(options, component);
 
@@ -245,14 +241,17 @@ component.ui = ui;
 return applyFieldInitializer(options, component);
 } // delay
 
-export function _xtc (options) {
-return applyFieldInitializer(options, wrapWebaudioNode(
-new Xtc(audioContext)
-));
-} // _xtc
 
 export function xtc (options = `
-bypass; mix=0.3; delay=0.00009; feedback=0.9; reverseStereo=1;
+bypass; mix=0.25; delay=0.00007; feedback=0.85;
+preType=bandpass;
+preFrequency=803.838 | s(t/2, 800, 1000);
+preQ=0.205 | c(t/3, .2, 0.9);
+preFilterGain=0;
+postType=peaking;
+postFrequency=851.71 | c(t/3, 850, 1050);
+postQ=0.21 | s(t/2, 0.2, 0.9);
+postFilterGain=7
 `) {
 const component = new Xtc(audioContext);
 const ui = new Control(component, "xtc");
@@ -260,13 +259,40 @@ const ui = new Control(component, "xtc");
 createFields(
 component, ui,
 [...AudioComponent.sharedParameterNames,
-"delay", "feedback", "reverseStereo",
-"preType", "preFrequency", "preQ", "preGain",
-"postType", "postFrequency", "postQ", "postGain"
+"delay", "feedback",
+"preType", "preFrequency", "preQ", "preFilterGain",
+"postType", "postFrequency", "postQ", "postFilterGain"
 ]); // createFields
-
 component.ui = ui;
+
+//subscribe(component, "preType", updatePreGain);
+//subscribe(component, "postType", updatePostGain);
+
+
 return applyFieldInitializer(options, component);
+
+
+/*function updatePreGain (component, name, type) {
+if (component._filterGainTypes.includes(type)) {
+component.ui.nameToField("preFilterGain").hidden = false;
+ component.ui.nameToField("preGain").hidden = true;
+} else {
+component.ui.nameToField("preFilterGain").hidden = true;
+ component.ui.nameToField("preGain").hidden = false;
+} // if
+} // updatePreGain 
+
+function updatePostGain (component, name, type) {
+if (component._filterGainTypes.includes(type)) {
+component.ui.nameToField("postFilterGain").hidden = false;
+ component.ui.nameToField("postGain").hidden = true;
+} else {
+component.ui.nameToField("postFilterGain").hidden = true;
+ component.ui.nameToField("postGain").hidden = false;
+} // if
+} // updatePostGain 
+*/
+
 } // xtc
 
 /// containers
