@@ -203,11 +203,10 @@ const fields = propertyNames.map(name => createField(component, node, name)).fil
 //console.debug("createFields: ", fields);
 
 if (after) {
-const afterElement = after instanceof Number? container.children[after]
-: container.querySelector(`.field[data-name=${after}]`);
+const afterField = after instanceof Number? container.children[after] : ui.nameToField(after);
 
-if (afterElement instanceof HTMLElement && afterElement.matches(".field")) {
-fields.reverse().forEach(field => afterElement.insertAdjacentElement("afterEnd", field));
+if (afterField instanceof HTMLElement && afterField.matches(".field")) {
+fields.reverse().forEach(field => afterField.insertAdjacentElement("afterEnd", field));
 } // if
 
 } else {
@@ -215,10 +214,10 @@ fields.forEach(field => container.appendChild(field));
 } // if
 
 function createField (component, node, property) {
-if (typeof(component[property]) === "number") {
+if (isAudioParam(component[property]) || typeof(component[property]) === "number") {
 const constraints = calculateConstraints(node, property);
-if (!node) constraints.defaultValue = component[property];
-//if (property === "bandwidth") debugger;
+if (!node) constraints.defaultValue =
+isAudioParam(component[property])? component[property].defaultValue : component[property];
 
 return ui.number(Object.assign({}, constraints, AudioComponent.constraints[property]));
 

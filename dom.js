@@ -38,6 +38,7 @@ const hide = ui._hide;
 const show = ui._show;
 const container = ui.container.fields;
 
+console.debug("showFields: initializing ", initializers);
 initializers.forEach(initialize);
 
 const fieldsToShow = [...symmetricDifference(
@@ -80,7 +81,10 @@ console.debug(`handleHideOnBypass: ${component.name}, ${hideOnBypass.length}, ${
 
 function initialize (d) {
 const {name, defaultValue, automator} = d;
+console.debug("initialize: ", name);
+if (name === "preType") debugger;
 const element = component.ui.nameToElement(name);
+
 
 if (element) {
 initialized.add(name);

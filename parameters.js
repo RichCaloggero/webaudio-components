@@ -73,7 +73,11 @@ const excludedParameterNames = [
 ];
 const exclude = new Set(_exclude.concat(excludedParameterNames));
 
-const allProps = allProperties(node).filter(p => !exclude.has(p));
+//debugger;
+const allProps = allProperties(node)
+.filter(p => !exclude.has(p))
+.filter(p => p[0] !== "_");
+
 const allMapped = (node.parameters && node.parameters instanceof AudioParamMap)? [...node.parameters.keys()] : [];
 const params = validParameters(node, allProps, allMapped);
 //console.debug("webaudioParameters: ", params);
@@ -105,6 +109,7 @@ return isFunction(param) || isAudioParamMap(param)? false
 isAudioParam(param)
 || isNumber(param)
 || isString(param)
+|| isBoolean(param)
 );
 } // isParameter
 
@@ -129,3 +134,4 @@ export function isAudioParamMap (m) {return m && m instanceof AudioParamMap;}
 export function isFunction (f) {return f && f instanceof Function;}
 export function isNumber (n) {return typeof(n) === "number" || n instanceof Number;}
 export function isString (s) {return typeof(s) === "string" || s instanceof String;}
+export function isBoolean (x) {return typeof(x) === "boolean";}

@@ -2,153 +2,59 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Test</title>
+<meta name="X-Content-Type-Options" content="nosniff">
+
+<title>XTC</title>
 </head>
 <body> 
-<br><label>Source: <input type="text" accesskey="s" id="source" value="t.mp3"></label>
-<br><audio crossorigin="anonymous"
-src="./t.mp3"
-controls></audio>
-
-<div id="control">
-<br><label>dry: <input accesskey="0" type="number" id="dry" value="0" min="-1" max="1" step="0.1"></label>
-<label>wet: <input type="number" id="wet" value="2" min="-1" max="3" step="0.1"></label>
-
-<br><label>Delay: <input type="number" id="delay" value="0.00009" min="0" max="1" step="0.00001"></label>
-<label>feedback: <input type="number" id="feedback" value="0.93" min="-1" max="1" step="0.05"></label>
-<label>interpolation: <input type="number" id="interpolation-type" value="2" min="0" max="2" step="1"></label>
-
-<fieldset><legend><h2>low</h2></legend>
-<label>Q: <input accesskey="1" type="number" id="low-q" value="0.66" min="0.001" max="20" step="0.001"></label>
-<label>gain: <input type="number" id="low-gain" value="-20" min="-100" max="0" step="0.5"></label>
-<label>type: <input type="text" id="low-type" value="lowshelf"></label>
-</fieldset>
-
-<fieldset><legend><h2>mid</h2></legend>
-<br><label>Q: <input  type="number" id="mid-q" value="0.266" min="0.001" max="20" step="0.001"></label>
-<label>gain: <input type="number" id="mid-gain" value="-6" min="-100" max="0" step="0.5"></label>
-<label>frequency: <input accesskey="2" type="number" id="mid-frequency" value="950.0" min="500" max="8000" step="10"></label>
-<label>type: <input type="text" id="mid-type" value="peaking"></label>
-</fieldset>
-
-<fieldset><legend><h2>high</h2></legend>
-<label>Q: <input accesskey="3" type="number" id="high-q" value="0.66" min="0.001" max="20" step="0.001"></label>
-<label>gain: <input type="number" id="high-gain" value="-20" min="-100" max="0" step="0.5"></label>
-<label>type: <input type="text" id="high-type" value="highshelf"></label>
-</fieldset>
-
-
-<br><label>invert phase: <input type="checkbox" checked id="invertPhase"></label>
-<label>Reverse stereo: <input type="checkbox" checked id="reverseStereo"></label>
-</div>
-
-
 
 <script type="module">
-const audioContext = new AudioContext();
-const media = document.querySelector("audio");
-const source = audioContext.createMediaElementSource(media);
-const dry = audioContext.createGain();
-const wet = audioContext.createGain();
-const low = window.low = audioContext.createBiquadFilter();
-const mid = window.mid = audioContext.createBiquadFilter();
-const high = window.high = audioContext.createBiquadFilter();
+import {AudioComponent, audioContext} from "./audioComponent.js";
+import * as audio from "./components.js";
 
+const commonOptions = "bypass, silentBypass, mix";
 
-await audioContext.resume();
-await audioContext.audioWorklet.addModule("./xtc.worklet.js");
-const xtc = new AudioWorkletNode(audioContext, "xtc");
-window.xtc = xtc;
+window.app = audio.app("enableAutomation; automationInterval=0.1",
+audio.series("hide=mix, bypass, silentBypass",
+window.player = audio.player(`
+show=media, play, position;
+media=http://archive.org/download/gd1981-12-30.sbd.miller.117246.flac16/gd81-12-30d2t02.mp3
+`), // player
+window.xtc = audio._xtc(`
+mix=0.25;
+delay=0.00007;
+feedback=0.85;
+reverseStereo=true;
+preType=bandpass;
+preFrequency=803.838 | s(t/2, 800, 1000);
+preQ=0.205 | c(t/3, .2, 0.9);
+preGain=-50;
+postType=peaking;
+postFrequency=851.71 | c(t/3, 850, 1050);
+postQ=0.21 | s(t/2, 0.2, 0.9);
+postGain=10
+`), // xtc
+audio.destination()
+) // series
+); // app
+document.body.appendChild(app.ui.container);
 
+/*function createXtc () {
+return audio.series("title=XTC block; bypass=true; hide=silentBypass; mix=1",
+createBand("title=prefilter band 1; type=lowshelf; frequency=500; Q=0.26; gain=-10"),
+createBand("title=prefilter band 2; type=highshelf; frequency=6000; Q=0.26; gain=-10"),
+audio.xtc("delay=0.00009; feedback=0.85; reverseStereo=1; gain=-1"),
+createBand("title=post filter; type=peaking; frequency=1000; Q=.66; gain=1"),
+); // series
+} // createXtc
 
-source.connect(dry).connect(audioContext.destination);
-source
-.connect(low).connect(mid).connect(high)
-.connect(xtc).connect(wet).connect(audioContext.destination);
-
-low.type = "lowshelf";
-low.frequency.value = 500;
-low.Q.value = .66;
-low.gain.value = -32;
-high.type = "highshelf";
-high.frequency.value = 8000;
-high.Q.value = 0.66;
-high.gain.value = -32;
-mid.type = "peaking";
-mid.frequency.value = 950;
-mid.Q.value = 0.266;
-mid.gain.value = -7.0;
-
-bind("source", media, "src");
-
-bind("wet", wet, "gain");
-bind("dry", dry, "gain");
-bind("delay", xtc, "delay");
-bind("feedback", xtc, "feedback");
-bind("interpolation-type", xtc, "interpolationType");
-
-bind("low-q", low, "Q");
-bind("low-gain", low, "gain");
-bind("low-type", low, "type");
-
-bind("mid-frequency", mid, "frequency");
-bind("mid-q", mid, "Q");
-bind("mid-gain", mid, "gain");
-bind("mid-type", mid, "type");
-
-bind("high-q", high, "Q");
-bind("high-gain", high, "gain");
-bind("high-type", high, "type");
-
-bind("invertPhase", xtc, "gain", value => value? -1 : 1);
-bind("reverseStereo", xtc, "reverseStereo", value => value? 1 : 0);
-
-
-
-function bind (name, audioNode, prop, processValue) {
-const element = document.querySelector(`#${name}`);
-element.addEventListener("change", e => update(audioNode, prop, getValue(element, processValue)));
-update(audioNode, prop, getValue(element, processValue));
-console.debug("bound ", name, " to ", prop, " on ", audioNode.constructor.name);
-} // bind
-
-
-function update(audioNode, prop, value) {
-let param = null;
-
-if (prop in audioNode) {
-if (audioNode[prop] instanceof AudioParam) param = audioNode[prop];
-
-} else if (audioNode.parameters && audioNode.parameters.has(prop)) {
-param = audioNode.parameters.get(prop);
-if (!(param instanceof AudioParam)) param = null;
-
-} else {
-alert(`update: can't update property ${prop} on ${audioNode} to ${value}`);
-throw new Error("cannot update");
-} // if
-
-param? param.value = Number(value) : audioNode[prop] = value;
-console.debug("updated ", prop, value);
-} // update
-
-
-function getValue (element, processValue = value => value) {
-return element.type === "checkbox"? processValue(element.checked) : processValue(element.value);
-} // getValue
-
-function bw2q (bw) {
-return Math.sqrt(Math.pow(2,bw))/(Math.pow(2,bw)-1);
-} // bw2q
-
-function q2bw (q) {
-return Math.log(
-Math.sqrt(
-(
-((2+(1/Math.pow(q,2))), 2)/4)-1)+
-(1/(2*q*q))+1)/
-Math.log(2);
-} // q2bw
+function createBand (options) {
+return audio.series(`hide=silentBypass, mix`,
+audio.filter(`hide=silentBypass, mix, detune; ${options}`),
+audio.gain(`hide=${commonOptions}; gain=1`)
+); // series
+} // createBand
+*/
 
 </script>
 

@@ -245,6 +245,12 @@ component.ui = ui;
 return applyFieldInitializer(options, component);
 } // delay
 
+export function _xtc (options) {
+return applyFieldInitializer(options, wrapWebaudioNode(
+new Xtc(audioContext)
+));
+} // _xtc
+
 export function xtc (options = `
 bypass; mix=0.3; delay=0.00009; feedback=0.9; reverseStereo=1;
 `) {
