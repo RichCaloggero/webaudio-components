@@ -248,6 +248,7 @@ preType=bandpass;
 preFrequency=803.838 | s(t/2, 800, 1000);
 preQ=0.205 | c(t/3, .2, 0.9);
 preFilterGain=0;
+preGain=1;
 postType=peaking;
 postFrequency=851.71 | c(t/3, 850, 1050);
 postQ=0.21 | s(t/2, 0.2, 0.9);
@@ -260,7 +261,7 @@ createFields(
 component, ui,
 [...AudioComponent.sharedParameterNames,
 "delay", "feedback",
-"preType", "preFrequency", "preQ", "preFilterGain",
+"preType", "preFrequency", "preQ", "preFilterGain", "preGain",
 "postType", "postFrequency", "postQ", "postFilterGain"
 ]); // createFields
 component.ui = ui;

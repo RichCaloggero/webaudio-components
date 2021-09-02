@@ -134,11 +134,21 @@ this._filterGainTypes = ["lowshelf", "highshelf", "peaking"];
 
 this.input
 .connect(this.pre)
-//.connect(this._preGain)
+.connect(this._preGain)
 .connect(this.xtc)
 .connect(this.post)
 //.connect(this._postGain)
 .connect(this.wet);
+
+this.preFrequency = this.pre.frequency;
+this.preQ = this.pre.Q;
+this.preFilterGain = this.pre.gain;
+this.preGain = this._preGain.gain;
+
+this.postFrequency = this.post.frequency;
+this.postQ = this.post.Q;
+this.postFilterGain = this.post.gain;
+
 } // constructor
 
 
@@ -147,6 +157,25 @@ set delay (value) {this.xtc.parameters.get("delay").value = value;}
 
 get feedback () {return this.xtc.parameters.get("feedback").value;}
 set feedback (value) {this.xtc.parameters.get("feedback").value = value;}
+
+// exposed filter parameters
+get preType () {return this.pre.type;}
+set preType (value) {this.pre.type = value;}
+
+get postType () {return this.post.type;}
+set postType (value) {this.post.type = value;}
+
+/*get preFrequency () {return this.pre.frequency.value;}
+set preFrequency (value) {this.pre.frequency.value = value;}
+
+get preQ () {return this.pre.Q.value;}
+set preQ (value) {this.pre.Q.value = value;}
+
+get postFrequency () {return this.post.frequency.value;}
+set postFrequency (value) {return this.post.frequency.value = value;}
+
+get postQ () {return this.post.Q.value;}
+set postQ (value) {return this.post.Q.value = value;}
 
 get preFilterGain () {return this.pre.gain.value;}
 set preFilterGain (value) {this.pre.gain.value = value;}
@@ -161,25 +190,8 @@ set postFilterGain (value) {this.post.gain.value = value;}
 
 
 _usingFilterGain (filter) {return this._filterGainTypes.includes(filter.type);}
+*/
 
-// exposed filter parameters
-get preType () {return this.pre.type;}
-set preType (value) {this.pre.type = value;}
-
-get postType () {return this.post.type;}
-set postType (value) {this.post.type = value;}
-
-get preFrequency () {return this.pre.frequency.value;}
-set preFrequency (value) {this.pre.frequency.value = value;}
-
-get preQ () {return this.pre.Q.value;}
-set preQ (value) {this.pre.Q.value = value;}
-
-get postFrequency () {return this.post.frequency.value;}
-set postFrequency (value) {return this.post.frequency.value = value;}
-
-get postQ () {return this.post.Q.value;}
-set postQ (value) {return this.post.Q.value = value;}
 
 } // class Xtc
 
