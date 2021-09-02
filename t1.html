@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="X-Content-Type-Options" content="nosniff">
+
+<title>Test</title>
+</head>
+<body> 
+
+<script type="module">
+import * as component from "./audioComponent.js";
+import * as observer from "./observer.js";
+import * as audio from "./components.js";
+import * as ui from "./ui.js";
+
+const commonOptions = "bypass, silentBypass, mix";
+
+window.app = audio.app("enableAutomation; automationInterval=0.1",
+audio.series(
+window.player = audio.player("show=media, play, position; media=media/t.flac"),
+audio.midSide("show=*"),
+audio.destination()
+) // series
+);
+
+document.body.appendChild(app.ui.container); // audio.app
+
+</script>
+
+</body>
+</html>

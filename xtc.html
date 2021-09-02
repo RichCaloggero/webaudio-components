@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="X-Content-Type-Options" content="nosniff">
+
+<title>XTC</title>
+</head>
+<body> 
+
+<script type="module">
+import {AudioComponent, audioContext} from "./audioComponent.js";
+import * as audio from "./components.js";
+
+const commonOptions = "bypass, silentBypass, mix";
+
+window.app = audio.app("enableAutomation; automationInterval=0.1",
+audio.series("hide=mix, bypass, silentBypass",
+window.player = audio.player(`
+show=media, play, position;
+media=http://archive.org/download/gd1981-12-30.sbd.miller.117246.flac16/gd81-12-30d2t02.mp3
+`), // player
+window.xtc = audio.xtc(
+/*`
+show=*;
+mix=0.25;
+delay=0.00007;
+feedback=0.85;
+preType=bandpass;
+preFrequency=803.838 | s(t/2, 800, 1000);
+preQ=0.205 | c(t/3, .2, 0.9);
+preFilterGain=0;
+postType=peaking;
+postFrequency=851.71 | c(t/3, 850, 1050);
+postQ=0.21 | s(t/2, 0.2, 0.9);
+postFilterGain=7
+`*/
+), // xtc
+audio.destination()
+) // series
+); // app
+document.body.appendChild(app.ui.container);
+
+/*function createXtc () {
+return audio.series("title=XTC block; bypass=true; hide=silentBypass; mix=1",
+createBand("title=prefilter band 1; type=lowshelf; frequency=500; Q=0.26; gain=-10"),
+createBand("title=prefilter band 2; type=highshelf; frequency=6000; Q=0.26; gain=-10"),
+audio.xtc("delay=0.00009; feedback=0.85; reverseStereo=1; gain=-1"),
+createBand("title=post filter; type=peaking; frequency=1000; Q=.66; gain=1"),
+); // series
+} // createXtc
+
+function createBand (options) {
+return audio.series(`hide=silentBypass, mix`,
+audio.filter(`hide=silentBypass, mix, detune; ${options}`),
+audio.gain(`hide=${commonOptions}; gain=1`)
+); // series
+} // createBand
+*/
+
+</script>
+
+</body>
+</html>

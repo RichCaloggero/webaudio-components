@@ -171,11 +171,6 @@ return;
 
 field.dataset.value = getValue(element);
 
-//storeValue(receiver, name, value);
-//if (dataType === Number) value = adjustStepSize(element, Number(value));
-
-//if (name === "positionX" || name === "positionZ" || name === "angle" || name === "radius")
-//console.debug("change handler: ", name, value);
 
 if (receiver[name] instanceof Function) receiver[name].call(receiver, dataType(value));
 else updateValue(receiver, name, dataType(value));
@@ -184,9 +179,11 @@ else updateValue(receiver, name, dataType(value));
 
 
 function updateValue (receiver, property, value) {
-//console.debug("updateValue: ", receiver instanceof AudioNode? " AudioNode " : " AudioComponent ", receiver.name || receiver.label, property, value);
-if (property instanceof Function) property.call(receiver, value);
+console.debug("updateValue: ", receiver instanceof AudioNode? " AudioNode " : " AudioComponent ", receiver.name || receiver.label, property, value);
+if (property instanceof AudioParam) property.value = value;
+else if (receiver[property] instanceof AudioParam) receiver[property].value = value;
 else receiver[property] = value;
+//if (property === "midGain") debugger;
 } // updateValue
 
 

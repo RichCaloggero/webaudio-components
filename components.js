@@ -1,5 +1,5 @@
 import {Control, update, setValue, createFields, statusMessage} from "./ui.js";
-import {audioContext, AudioComponent, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
+import {audioContext, AudioComponent, MidSide, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
 import {wrapWebaudioNode, webaudioParameters, reorder} from "./parameters.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {getAutomation,  enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval} from "./automation.js";
@@ -294,6 +294,13 @@ component.ui.nameToField("postFilterGain").hidden = true;
 */
 
 } // xtc
+
+export function midSide (options) {
+const ms = new MidSide(audioContext);
+ms.ui = new Control(ms, "mid side processor");
+createFields(ms, ms.ui, [...AudioComponent.sharedParameterNames, "midGain", "sideGain"]);
+return applyFieldInitializer(options, ms);
+} // midSide
 
 /// containers
 

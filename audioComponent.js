@@ -3,6 +3,8 @@ export let audioContext = new AudioContext();
 await audioContext.resume();
 await audioContext.audioWorklet.addModule("./xtc.worklet.js");
 console.log("audioWorklet.xtc created.");
+await audioContext.audioWorklet.addModule("./midSide.worklet.js");
+console.log("audioWorklet.misSide created.");
 
 function* idGen () {let count = 1; while(true) yield count++;}
 export const componentId = idGen();
@@ -108,6 +110,17 @@ console.error(message);
 } // _error
 
 } // class AudioComponent
+
+export class MidSide extends AudioComponent {
+constructor (audio) {
+super (audio, "midSide");
+this.ms = new AudioWorkletNode(audio, "midSide");
+this.midGain = this.ms.parameters.get("midGain");
+this.sideGain = this.ms.parameters.get("sideGain");
+
+this.input.connect(this.ms).connect(this.wet);
+} // constructor
+} // class MidSide
 
 export class Xtc extends AudioComponent {
 constructor (audio) {
