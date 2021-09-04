@@ -110,8 +110,8 @@ component, ui,
 ["media", "play", "position"]
 ); // createFields
 component.ui = ui;
-
 const position = ui.nameToElement("position");
+
 component._media.addEventListener("timeupdate", e => {
 if (!component._media.seeking) position.value = Number(e.target.currentTime.toFixed(1))
 });
