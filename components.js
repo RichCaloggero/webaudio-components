@@ -92,6 +92,12 @@ return component;
 
 } // app
 
+export function passThrough () {
+const component = new AudioComponent(audioContext);
+component.input.connect(component.output);
+component.ui = new Control(component, "pass through");
+return component;
+} // passThrough
 
 /// wrapped webaudio nodes
 
@@ -110,6 +116,9 @@ component._media.addEventListener("timeupdate", e => {
 if (!component._media.seeking) position.value = Number(e.target.currentTime.toFixed(1))
 });
 position.step = 0.1;
+
+component._media.addEventListener("error", e => statusMessage(`cannot load media from ${e.target.src}`));
+
 
 return applyFieldInitializer(options, component);
 } // player

@@ -20,6 +20,8 @@ window.player = audio.player(`
 show=media, play, position;
 media=http://archive.org/download/gd1981-12-30.sbd.miller.117246.flac16/gd81-12-30d2t02.mp3
 `), // player
+//audio.passThrough(),
+audio.midSide("show=*"),
 window.xtc = audio.xtc(
 /*`
 show=*;

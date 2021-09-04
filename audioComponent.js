@@ -206,10 +206,8 @@ this.source = createBufferSource(media);
 
 } else {
 this._media = document.createElement("audio");
-audio.src = media instanceof String || typeof(media) === "string"? media : "";
-this._media.setAttribute("crossorigin", "anonymous");
 this.source = audio.createMediaElementSource(this._media);
-this.play = false;
+this._media.setAttribute("crossorigin", "anonymous");
 } // if
 
 this.source.connect(this.output);
