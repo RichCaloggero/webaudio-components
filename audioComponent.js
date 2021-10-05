@@ -77,9 +77,9 @@ this.wet.disconnect();
 this.__bypass.connect(this.output);
 this._bypass = true;
 } else {
+this.__bypass.disconnect();
 this.dry.connect(this.output);
 this.wet.connect(this.output);
-this.__bypass.disconnect();
 this._bypass = false;
 } // if
 //console.debug(`- ${this.wet.gain.value} ${this.dry.gain.value} ${this._bypass}`);
@@ -305,6 +305,7 @@ if (components.length < 2) this._error("need two or more components");
 
 const first = components[0];
 const last = components[components.length-1];
+if (first === last) this.error("identical components found in sequence; aborting");
 this.first = first;
 this.last = last;
 this.children = this.components = components;
@@ -315,24 +316,22 @@ this.input.connect(first.input);
 console.log(`- connected ${this.name} input to ${first.name}`);
 } // if
 
-if (first !== last) {
-components.forEach((c, i, all) => {
-if (i < all.length-1) {
-const next = all[i+1];
+for (let i=0; i<components.length-1; i++) {
+const c = components[i];
+const next = components[i+1];
 
 if (c.output && next.input) {
-//c.output.disconnect();
+c.output.disconnect();
 c.output.connect(next.input);
 console.log(`- connected ${c.name} to ${next.name}`);
 
 } else {
-//this._error(`${c.name} and ${next.name} must both be AudioComponents`);
+this._error(`cannot connect ${c.name} to ${next.name}`);
 } // if
-} // if
-}); // forEach
-} // if
+} // loop over components
 
 if (last.output) {
+last.output.disconnect();
 last.output.connect(this.wet);
 console.log(`- connected ${last.name} to ${this.name} wet`);
 } // if

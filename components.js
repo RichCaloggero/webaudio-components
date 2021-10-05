@@ -305,7 +305,7 @@ component.ui.nameToField("postFilterGain").hidden = true;
 
 } // xtc
 
-export function midSide (options) {
+export function midSide (options = "midGain=1; sideGain=1") {
 const ms = new MidSide(audioContext);
 ms.ui = new Control(ms, "mid side processor");
 createFields(ms, ms.ui, [...AudioComponent.sharedParameterNames, "midGain", "sideGain"]);

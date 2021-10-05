@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test</title>
+</head>
+<body>
+<h1>Testing S</h1>
+<button id="clear" accesskey="c">clear</button>
+<div aria-label="status" id="status" role="log"></div>
+
+<h2>Player</h2>
+<audio tabindex="0" src="t.opus" controls></audio>
+
+<h2>Panner</h2>
+<fieldset><legend><h3>cartesian</h3></legend>
+<label>x: <input type="number" id="x" step="0.1"></label>
+<label>y: <input type="number" id="y" step="0.1"></label>
+</fieldset>
+
+<fieldset><legend><h3>polar</h3></legend>
+<label>r: <input type="number" id="r" step="0.1"></label>
+<label>angle: <input type="number" id="a" step="0.02"></label>
+</fieldset>
+
+<script src="s.js"></script>
+<script  type="module">
+import {createEventSignal, createClickSignal, createNumericSignal} from "./jSig.js";
+
+const audio = new AudioContext();
+const panner = window.panner = audio.createPanner();
+panner.channelCount = 1;
+const player = $("audio");
+const source = audio.createMediaElementSource(player);
+source.connect(panner).connect(audio.destination);
+player.focus();
+
+panner.panningModel = "HRTF";
+panner.distanceModel="inverse";
+panner.rollOffFactor = 0.3;
+panner.maxDistance = 50;
+panner.refDistance = 25;
+panner.coneInnerAngle = 180;
+panner.coneOuterAngle = 360;
+panner.orientationX.value = 0;
+
+S.root(() => {
+const x = createNumericSignal(ui("x"));
+const y = createNumericSignal(ui("y"));
+const r = createNumericSignal(ui("r"));
+const a = createNumericSignal(ui("a"));
+const clear = createClickSignal(ui("clear"));
+
+
+const polar = S(() => {
+//message("converting to polar");
+return toPolar(x(), y());
+});
+
+const cartesian = S(() => {
+//message("converting to cartesian");
+return toCartesian(r(), a());
+});
+
+// monitors
+S(() => message(`clicks = ${clear() && "click"}`));
+S(() => message(`position = ${cartesian()}`));
+
+S(() => clear().target && (ui("status").innerHTML = ""));
+S(() => [panner.positionX.value, panner.positionZ.value] = cartesian());
+
+S(() => {
+const [_r, _a] = polar();
+ui("r").value = _r.toFixed(3);
+ui("a").value = _a.toFixed(3);
+});
+
+S(() => {
+const [_x, _y] = cartesian()
+ui("x").value = _x.toFixed(3);
+ui("y").value = _y.toFixed(3);
+});
+
+}); // root
+
+function setValue (element, value, truncateAfter = 2) {
+element.value = value.toFixed(truncateAfter);
+message(`set value of ${element.type} ${element.id} to ${value}`);
+} // setValue
+
+function message(text) {
+ui("status").insertAdjacentHTML("beforeEnd", `<p>${text}</p>`);
+} // message
+
+function ui(element) {
+return (
+element instanceof HTMLElement? element
+: document.getElementById(element)
+); // return
+} // ui
+
+function $ (s, c = document) {return c.querySelector(s);}
+function $$ (s, c = document) {return [...c.querySelectorAll(s)];}
+function toPolar (_x, _y) {
+return [
+Math.sqrt(_x*_x + _y*_y),
+Math.atan2(_y, _x)
+];
+} // toPolar
+
+function toCartesian (_r, _a) {
+return [
+_r * Math.cos(_a),
+_r * Math.sin(_a)
+];
+} // toCartesian
+
+function probe (signal, name) {
+S(() => {
+message(`probe: ${name} = ${signal()}`);
+return signal;
+});
+} // probe
+
+
+</script>
+
+</body>
+</html>

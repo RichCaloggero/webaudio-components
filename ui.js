@@ -1,3 +1,5 @@
+import S from "./S.module.js";
+import * as jSig from "./jSig.js";
 import * as dom from "./dom.js";
 import {AudioComponent} from "./audioComponent.js";
 import {isNumber, isString, isFunction, isAudioParam, isAudioParamMap} from "./parameters.js";
@@ -24,10 +26,11 @@ static dataTypeMap = new Map([
 constructor (receiver, label = "") {
 if (!receiver) {
 alert("Control: need a receiver");
-return null;
+throw new Error("need a receiver");
 } // if
 this.receiver = receiver;
 this.label = label;
+this.signals = Object.create(null);
 this.container = document.createElement("div");
 this.container.setAttribute("role", "region");
 //this.container.setAttribute("aria-roledescription", "component");
@@ -39,8 +42,9 @@ this.container.innerHTML = `
 <div class="children"></div>
 `;
 
-this.container.fields = this.container.querySelector(".fields");
-this.container.addEventListener("change", createUpdateHandler(this));
+this.container.fields = this.container.children[1];
+//this.container.fields = this.container.querySelector(".fields");
+//this.container.addEventListener("change", createUpdateHandler(this));
 } // constructor
 
 getElementByName (name) {
@@ -57,12 +61,15 @@ defaultValue = "",
 dataType = String,
 receiver = this.receiver
 }) {
-return createControl(receiver, name, dataType, defaultValue,
+const field = createField(receiver, name, dataType, defaultValue,
 `<label>
 <span class="text">${label}</span>
 <input type="text" value="${defaultValue}" data-name="${name}">
 </label>
 `);
+this.signals[name] = jSig.stringSignal(dom.fieldToElement(field), defaultValue);
+this.connectSignal(name, receiver);
+return field;
 } // string
 
 action ({
@@ -72,13 +79,13 @@ dataType = Action,
 defaultValue = null,
 receiver = this.receiver
 }) {
-const element = createControl(receiver, name, dataType, defaultValue,
+const field = createField(receiver, name, dataType, defaultValue,
 `<button data-name="${name}">${label}</button>`
-); // createControl
-element.addEventListener("click", e => update(e.target));
-return element;
+); // createField
+this.signals[name] = jSig.clickSignal(dom.fieldToElement(field), "click");
+this.connectSignal(name, receiver);
+return field;
 } // action
-
 
 boolean ({
 name = "",
@@ -87,13 +94,14 @@ defaultValue = false,
 dataType = Boolean,
 receiver = this.receiver
 }) {
-const element = createControl(
+const field = createField(
 receiver, name, dataType, defaultValue,
 `<button data-name="${name}" aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
 );
-element.dataset.value = (defaultValue);
-booleanHelper(element);
-return element;
+field.dataset.value = (defaultValue);
+this.signals[name] = jSig.booleanSignal(dom.fieldToElement(field), defaultValue);
+this.connectSignal(name, receiver);
+return field;
 } // boolean
 
 number ({
@@ -107,9 +115,10 @@ step = 1,
 controlType = "range",
 dataType = Number,
 }) {
+
 if (Math.abs((max-min) / step) > 100) controlType = "number";
 
-return createControl(receiver, name, dataType, defaultValue,
+const field = createField(receiver, name, dataType, defaultValue,
 `<label>
 <span class="text">${label}</span>
 <input class="control"
@@ -119,33 +128,47 @@ value="${dataType(defaultValue)}"
 min="${min}" max="${max}" step="${step}">
 </label>
 `);
+
+this.signals[name] = jSig.numericSignal(dom.fieldToElement(field), defaultValue);
+this.connectSignal(name, receiver);
+return field;
 } // number
+
+connectSignal (name, receiver) {
+const signal = this.signals[name];
+S(() => {
+if (isAudioParam(receiver[name])) receiver[name].value = signal();
+else receiver[name] = signal();
+});
+} // connectSignal
 
 nameToField (name) {return this.container.querySelector(`.fields > .field[data-name=${name}]`);}
 nameToElement (name) {return dom.fieldToElement(this.nameToField(name));}
+
+
 } // class Control
 
 /// helpers
 
-function createControl (receiver, name, dataType, defaultValue, html) {
-const control = document.createElement("div");
+function createField (receiver, name, dataType, defaultValue, html) {
+const field = document.createElement("div");
 try {
-control.insertAdjacentHTML("afterBegin", html);
+field.insertAdjacentHTML("afterBegin", html);
 } catch (e) {
-throw new Error(`createControl: invalid markup - ${e}`);
+throw new Error(`createField: invalid markup - ${e}`);
 } // catch
 
-control.hidden = true;
-control.className = `${dataType.name.toLowerCase()} field ${name}`;
-control.dataset.name = name;
-control.dataset.dataType = dataType.name;
-control.dataset.componentId = receiver._id;
-control.dataset.storageKey = dom.keyGen(receiver, name);
+field.hidden = true;
+field.className = `${dataType.name.toLowerCase()} field ${name}`;
+field.dataset.name = name;
+field.dataset.dataType = dataType.name;
+field.dataset.componentId = receiver._id;
+field.dataset.storageKey = dom.keyGen(receiver, name);
 
-return control;
-} // createControl
+return field;
+} // createField
 
-function createUpdateHandler (ui) {
+/*function createUpdateHandler (ui) {
 const {receiver, container} = ui;
 if (! receiver) throw new Error("need receiver");
 if (! container) throw new Error("need container");
@@ -175,16 +198,16 @@ field.dataset.value = getValue(element);
 if (receiver[name] instanceof Function) receiver[name].call(receiver, dataType(value));
 else updateValue(receiver, name, dataType(value));
 }; // function
-} // createUpdateHandler
-
 
 function updateValue (receiver, property, value) {
-console.debug("updateValue: ", receiver instanceof AudioNode? " AudioNode " : " AudioComponent ", receiver.name || receiver.label, property, value);
+//console.debug("updateValue: ", receiver instanceof AudioNode? " AudioNode " : " AudioComponent ", receiver.name || receiver.label, property, value);
 if (property instanceof AudioParam) property.value = value;
 else if (receiver[property] instanceof AudioParam) receiver[property].value = value;
 else receiver[property] = value;
 //if (property === "midGain") debugger;
 } // updateValue
+} // createUpdateHandler
+*/
 
 
 function booleanHelper (element) {

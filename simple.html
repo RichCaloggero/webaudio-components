@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="X-Content-Type-Options" content="nosniff">
 
-<title>XTC</title>
+<title>Simple</title>
 </head>
 <body> 
 
@@ -18,19 +18,10 @@ window.app = audio.app("enableAutomation; automationInterval=0.1",
 audio.series("hide=mix, bypass, silentBypass",
 window.player = audio.player(`
 show=media, play, position;
-media=media/Grateful Dead - (4K AI REMASTER) - Ticket To New Year's - Oakland Coliseum 1987-12-31-2i9DlMgXFyg.opus
+media=media/Grateful Dead - 11_17_1973 - Pauley Pavilion.opus
 `), // player
-audio.series("bypass=true; mix=0.25; title=XTC Block",
-window.xtc = audio.xtc(`
-mix=1; delay=0.00007; feedback=0.85;
-postType=peaking; postFrequency=42; postQ=0.85; postFilterGain=35;
-hide=mix, bypass, silentBypass
-`),
-audio.filter(`
-type=highshelf; frequency=4000; gain=30;
-hide=bypass, silentBypass, mix
-`),
-), // series
+audio.gain("gain = 0.5"),
+
 audio.destination()
 ) // series
 ); // app

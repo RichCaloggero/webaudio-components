@@ -75,8 +75,8 @@ return;
 
 function handleHideOnBypass (bypass) {
 const newState = getState(fieldToElement(bypass));
-hideOnBypass.forEach(x => x.hidden = newState)
-console.debug(`handleHideOnBypass: ${component.name}, ${hideOnBypass.length}, ${newState}`);
+hideOnBypass.forEach(x => x.hidden = newState);
+//console.debug(`handleHideOnBypass: ${component.name}, ${hideOnBypass.length}, ${newState}`);
 } // handleHideOnBypass
 
 function initialize (d) {
