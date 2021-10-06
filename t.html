@@ -9,6 +9,7 @@
 <button id="clear" accesskey="c">clear</button>
 <div aria-label="status" id="status" role="log"></div>
 
+<button id="test">click me</button>
 <label>number: <input type="number" id="number" step="0.1"></label>
 
 <script type="module">
@@ -16,9 +17,14 @@ import * as jSig from "./jSig.js";
 import S from "./S.module.js";
 
 S.root(() => {
-const sig = jSig.numericSignal($("input"));
+const num = jSig.numericSignal($("input"));
+const clear = jSig.clickSignal($("#clear"));
+const test = jSig.booleanSignal($("#test"));
 
-S(() => message(`number ${sig()}`));
+S(() => {clear(); $("#status").innerHTML = "";});
+
+S(() => message(`test: boolean ${test()}`));
+S(() => message(`number ${num()}`));
 });
 
 function message(text) {

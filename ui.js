@@ -144,6 +144,7 @@ else receiver[name] = signal();
 
 nameToField (name) {return this.container.querySelector(`.fields > .field[data-name=${name}]`);}
 nameToElement (name) {return dom.fieldToElement(this.nameToField(name));}
+valueOf (name) {return S.sample(this.signals[name]);}
 
 
 } // class Control

@@ -3,7 +3,7 @@ import S from "./S.module.js";
 const _probe_ = false;
 
 export function eventSignal (element, events = ["click", "change"]) {
-const signal = S.data(new CustomEvent("init"));
+const signal = S.value(new CustomEvent("init"));
 
 for (let event of events) {
 element.addEventListener(event, e => {
@@ -16,54 +16,44 @@ if (_probe_) S(() => message(`probe: event ${signal().type} from ${signal().targ
 return signal;
 } // createEventSignal
 
-export function clickSignal (element) {
-return eventSignal(element, ["click"]);
-} // createClickSignal
+export function clickSignal (element) {return eventSignal(element, ["click"]);} // createClickSignal
+export function changeSignal (element) {return eventSignal(element, ["change"]);} // createClickSignal
+
+export function valueSignal (element, _value = "") {
+const events = element instanceof HTMLButtonElement?
+clickSignal(element) : changeSignal(element);
+
+return S.on(events, _value => {
+const element = events().target;
+if (!element) return _value;
+return element instanceof HTMLButtonElement && element.hasAttribute("aria-pressed")?
+(toggleState(element), getState(element))
+: element.value;
+}, _value);
+
+function toggleState (element) {setState(element, !getState(element));}
+function setState (element, state) {element.setAttribute("aria-pressed", state? "true" : "false");}
+function getState (element) {return element.getAttribute("aria-pressed") === "true";}
+} // valueSignal
 
 export function numericSignal (element, value = 0) {
 if (element.type !== "number" && element.type !== "range") throw new Error("element must have type number or range");
-const events = eventSignal(element, ["change"]);
- const numbers = S.value(value);
-
-S.on(events, () => {
-if (events().target ) numbers(Number(events().target.value));
-}); // handler
-
-return numbers;
+const values = valueSignal(element, value);
+return S.on(values, () => Number(values()));
 } // createNumericSignal
-
 
 export function stringSignal (element, value = "") {
 if (element.type !== "text" && !(element instanceof HTMLSelectElement)) throw new Error("element must be input of type text, or an HTML select element");
-
-const events = eventSignal(element, ["change"]);
- const strings = S.value(value);
-
-S.on(events, () => {
-if (events().target ) strings(String(events().target.value));
-}); // handler
-
-return strings;
+return valueSignal(element, value);
 } // stringSignal
 
 export function booleanSignal (button, value = false) {
 if (button.tagName.toLowerCase() !== "button") throw new Error("argument must be a button element");
 button.setAttribute("aria-pressed", "false");
-button.setAttribute("role", "button");
-const events = eventSignal(button, ["click"]);
-const values = S.value(value);
+const values = valueSignal(button, value);
 
-S.on(events, () => {
-if (events().target) {
-toggleState(events().target);
-values(getState(events().target));
-} // if
-});
-return values;
+return S.on(values, () => Boolean(values()));
 
-function toggleState (element) {setState(element, !getState(element));}
-function setState (element, state) {element.setAttribute("aria-pressed", state? "true" : "false");}
-function getState (element) {return element.getAttribute("aria-pressed") === "true";}
 } // createBooleanSignal
 
 
