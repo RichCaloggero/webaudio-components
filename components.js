@@ -398,6 +398,7 @@ return component ;
 } getApp
 
 function walkComponentTree (component, _function) {
+console.debug("walking: ", component, _function);
 _function (component);
 if (component.children) component.children.forEach(c => walkComponentTree(c, _function));
 } // walkComponentTree

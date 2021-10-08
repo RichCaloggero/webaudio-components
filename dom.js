@@ -1,3 +1,4 @@
+import S from "./S.module.js";
 import {AudioComponent} from "./audioComponent.js";
 import {compile, setValue, getState} from "./ui.js";
 import {addAutomation, removeAutomation, compileFunction} from "./automation.js";
@@ -60,23 +61,25 @@ fieldsToShow.forEach(field => field.hidden = false);
 
 // handle hide on bypass
 const bypass = component.ui.nameToField("bypass");
-const hideOnBypass = bypass
-&& fieldsToShow.filter(x => x.dataset.name !== "bypass")
+console.debug("showFields: ", bypass, component.name);
+if (bypass) {
+debugger;
+const hideOnBypass = fieldsToShow.filter(x => x.dataset.name !== "bypass")
 .filter(x => x.dataset.name !== "silentBypass");
 
-if (bypass) {
 console.debug("hideOnBypass for ", component.name, " / ", component.ui.label, " / ", component._id);
 console.debug("- ", hideOnBypass.length, " fields");
-
-bypass.addEventListener("change", () => handleHideOnBypass(bypass));
-handleHideOnBypass(bypass);
+handleHideOnBypass(component.ui.signals.bypass, hideOnBypass);
 } // if
 return;
 
-function handleHideOnBypass (bypass) {
-const newState = getState(fieldToElement(bypass));
-hideOnBypass.forEach(x => x.hidden = newState);
-//console.debug(`handleHideOnBypass: ${component.name}, ${hideOnBypass.length}, ${newState}`);
+function handleHideOnBypass (bypassSignal, hideOnBypass) {
+S.root(() => {
+S(() => {
+const hide = bypassSignal();
+hideOnBypass.forEach(x => x.hidden = hide);
+});
+}); // S.root
 } // handleHideOnBypass
 
 function initialize (d) {

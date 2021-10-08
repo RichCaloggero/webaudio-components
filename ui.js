@@ -10,6 +10,7 @@ import {compileFunction} from "./automation.js";
 // this represents an action (button) with no state; it just returns it's input
 function Action (value) {return value;}
 
+
 export class Control {
 static dataTypes = new Set([
 Action, Number, String, Boolean,
@@ -136,13 +137,15 @@ return field;
 
 connectSignal (name, receiver) {
 const signal = this.signals[name];
+S.root(() => {
 S(() => {
 if (isAudioParam(receiver[name])) receiver[name].value = signal();
 else receiver[name] = signal();
 });
+}); // S.root
 } // connectSignal
 
-nameToField (name) {return this.container.querySelector(`.fields > .field[data-name=${name}]`);}
+nameToField (name) {return this.container.fields.querySelector(`.field[data-name=${name}]`);}
 nameToElement (name) {return dom.fieldToElement(this.nameToField(name));}
 valueOf (name) {return S.sample(this.signals[name]);}
 

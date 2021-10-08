@@ -1,18 +1,15 @@
 import S from "./S.module.js";
 
-const _probe_ = false;
 
 export function eventSignal (element, events = ["click", "change"]) {
 const signal = S.value(new CustomEvent("init"));
 
 for (let event of events) {
 element.addEventListener(event, e => {
-//message(`event ${e.type} from ${e.target}`);
 signal(e);
 });
 } // for
 
-if (_probe_) S(() => message(`probe: event ${signal().type} from ${signal().target?.id || null}`));
 return signal;
 } // createEventSignal
 
@@ -57,8 +54,3 @@ return S.on(values, () => Boolean(values()));
 } // createBooleanSignal
 
 
-function message(text) {
-const status = document.querySelector("[aria-live], [role=log], [role=status]");
-if (status) status.insertAdjacentHTML("beforeEnd", `<p>${text}</p>`);
-else alert(text);
-} // message
