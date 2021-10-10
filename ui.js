@@ -33,18 +33,20 @@ this.receiver = receiver;
 this.label = label;
 this.signals = Object.create(null);
 this.container = document.createElement("div");
+this.fields = document.createElement("div");
+this.fields.className = "fields";
+this.children = document.createElement("div");
+this.children.className = "children";
+
 this.container.setAttribute("role", "region");
 //this.container.setAttribute("aria-roledescription", "component");
 this.container.setAttribute("aria-label", label);
 this.container.className = `component ${label}`;
 this.container.innerHTML = `
 <div  class="component-title" role="heading">${label}</div>
-<div class="fields"></div>
-<div class="children"></div>
 `;
-
-this.container.fields = this.container.children[1];
-//this.container.fields = this.container.querySelector(".fields");
+this.container.appendChild(this.fields);
+this.container.appendChild(this.children);
 //this.container.addEventListener("change", createUpdateHandler(this));
 } // constructor
 
@@ -68,10 +70,27 @@ const field = createField(receiver, name, dataType, defaultValue,
 <input type="text" value="${defaultValue}" data-name="${name}">
 </label>
 `);
-this.signals[name] = jSig.stringSignal(dom.fieldToElement(field), defaultValue);
-this.connectSignal(name, receiver);
+this.createSignal(name, field, defaultValue);
 return field;
 } // string
+
+list ({
+name = "",
+label = separateWords(name),
+defaultValue = "",
+dataType = String,
+receiver = this.receiver
+}) {
+const field = createField(receiver, name, dataType, defaultValue,
+`<label>
+<span class="text">${label}</span>
+<select data-default="${defaultValue}" data-name="${name}"></select>
+</label>
+`);
+this.createSignal(name, field, defaultValue);
+return field;
+} // string
+
 
 action ({
 name = "",
@@ -83,8 +102,7 @@ receiver = this.receiver
 const field = createField(receiver, name, dataType, defaultValue,
 `<button data-name="${name}">${label}</button>`
 ); // createField
-this.signals[name] = jSig.clickSignal(dom.fieldToElement(field), "click");
-this.connectSignal(name, receiver);
+this.createSignal(name, field, jSig.clickSignal);
 return field;
 } // action
 
@@ -100,8 +118,7 @@ receiver, name, dataType, defaultValue,
 `<button data-name="${name}" aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
 );
 field.dataset.value = (defaultValue);
-this.signals[name] = jSig.booleanSignal(dom.fieldToElement(field), defaultValue);
-this.connectSignal(name, receiver);
+this.createSignal(name, field, defaultValue);
 return field;
 } // boolean
 
@@ -130,12 +147,19 @@ min="${min}" max="${max}" step="${step}">
 </label>
 `);
 
-this.signals[name] = jSig.numericSignal(dom.fieldToElement(field), defaultValue);
-this.connectSignal(name, receiver);
+this.createSignal(name, field, defaultValue);
 return field;
 } // number
 
-connectSignal (name, receiver) {
+createSignal (name, field, defaultValue, receiver = this.receiver) {
+const creator = defaultValue instanceof Function?
+defaultValue : signalCreator(typeof(defaultValue));
+const signal = this.signals[name] = creator(dom.fieldToElement(field), defaultValue);
+this.connectSignal(name, receiver);
+return signal;
+} // createSignal
+
+connectSignal (name, receiver = this.receiver) {
 const signal = this.signals[name];
 S.root(() => {
 S(() => {
@@ -145,10 +169,27 @@ else receiver[name] = signal();
 }); // S.root
 } // connectSignal
 
-nameToField (name) {return this.container.fields.querySelector(`.field[data-name=${name}]`);}
+nameToField (name) {return this.fields.querySelector(`.field[data-name=${name}]`);}
 nameToElement (name) {return dom.fieldToElement(this.nameToField(name));}
-valueOf (name) {return S.sample(this.signals[name]);}
+valueOf (name) {return this.signals[name]();}
+sample (name) {return S.sample(this.signals[name]);}
+setValue (name, value, _update) {
+const element = this.nameToElement(name);
+element.value = value;
+if (_update) update(element);
+} // setValue
 
+populateList (name, values) {
+const list = this.nameToElement(name);
+const entries = values instanceof Array? values : Object.entries(values);
+entries.map(entry => {
+const option = document.createElement("option");
+option.value = entry[0];
+option.textContent = entry[1];
+return option;
+}).forEach(option => list.add(option));
+return list;
+} // populateList
 
 } // class Control
 
@@ -221,7 +262,7 @@ update(e.target);
 }); // click handler
 } // booleanHelper
 
-export function createFields (component, ui, propertyNames, node = null, after = "") {
+export function createFields (component, ui, propertyNames, after = "", node = null) {
 const container = ui.container.querySelector(".fields");
 const fields = propertyNames.map(name => createField(component, node, name)).filter(field => field);
 //console.debug("createFields: ", fields);
@@ -393,3 +434,14 @@ if (_function && _function instanceof Function) return _function;
 statusMessage(`Invalid automation function: ${text}`);
 return false;
 } // compile
+
+function signalCreator (type) {
+const map = {
+string: jSig.stringSignal,
+number: jSig.numericSignal,
+boolean: jSig.booleanSignal,
+};
+const func = map[type];
+if (func) return func;
+else throw new Error("invalid signal type");
+} // signalCreator

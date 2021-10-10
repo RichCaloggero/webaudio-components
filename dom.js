@@ -37,9 +37,9 @@ const initializers = ui._initializers;
 const initialized = new Set();
 const hide = ui._hide;
 const show = ui._show;
-const container = ui.container.fields;
+const container = ui.fields;
 
-console.debug("showFields: initializing ", initializers);
+//console.debug("showFields: initializing ", initializers);
 initializers.forEach(initialize);
 
 const fieldsToShow = [...symmetricDifference(
@@ -61,14 +61,13 @@ fieldsToShow.forEach(field => field.hidden = false);
 
 // handle hide on bypass
 const bypass = component.ui.nameToField("bypass");
-console.debug("showFields: ", bypass, component.name);
+//console.debug("showFields: ", bypass, component.name);
 if (bypass) {
-debugger;
 const hideOnBypass = fieldsToShow.filter(x => x.dataset.name !== "bypass")
 .filter(x => x.dataset.name !== "silentBypass");
 
-console.debug("hideOnBypass for ", component.name, " / ", component.ui.label, " / ", component._id);
-console.debug("- ", hideOnBypass.length, " fields");
+//console.debug("hideOnBypass for ", component.name, " / ", component.ui.label, " / ", component._id);
+//console.debug("- ", hideOnBypass.length, " fields");
 handleHideOnBypass(component.ui.signals.bypass, hideOnBypass);
 } // if
 return;
@@ -84,7 +83,7 @@ hideOnBypass.forEach(x => x.hidden = hide);
 
 function initialize (d) {
 const {name, defaultValue, automator} = d;
-console.debug("initialize: ", name);
+//console.debug("initialize: ", name);
 const element = component.ui.nameToElement(name);
 
 

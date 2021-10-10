@@ -1,3 +1,4 @@
+import S from "./S.module.js";
 import {Control, update, setValue, createFields, statusMessage} from "./ui.js";
 import {audioContext, AudioComponent, MidSide, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
 import {wrapWebaudioNode, webaudioParameters, reorder} from "./parameters.js";
@@ -155,87 +156,46 @@ new AudioWorkletNode(audioContext, "dattorroReverb")
 } // reverb
 
 export function panner (options) {
-let component = wrapWebaudioNode(audioContext.createPanner(), {publish: true});
+let component = wrapWebaudioNode(audioContext.createPanner());
+component.radius = component.angle = 0.0;
+const ui = component.ui;
 
-component._polarInput = false,
-Object.defineProperty(component, "polarInput", {
-get () {return this._polarInput;},
-set (value) {this._polarInput = Boolean(value);}
-}); // define polarInput
+createFields(component, ui, ["radius", "angle"], "positionZ");
 
-component._radius = 0,
-Object.defineProperty(component, "radius", {
-enumerable: true,
-get () {return this._radius;},
-set (value) {
-this._radius = Number(value);
-} // set
-}); // defineProperty
+S.root(() => {
+const polar = S(() => toPolar(ui.valueOf("positionX"), ui.valueOf("positionZ")));
+const cartesian = S(() => toCartesian(ui.valueOf("radius"), ui.valueOf("angle")));
 
-component._angle = 0;
-Object.defineProperty(component, "angle", {
-enumerable: true,
-get () {return this._angle;},
-set (value) {
-this._angle = Number(value);
-} // set
-}); // defineProperty
+S(() => [component.positionX, component.positionZ] = cartesian());
 
-createFields(component, component.ui, ["polarInput", "radius", "angle"], null, "positionZ");
+S(() => {
+const [_r, _a] = polar();
+ui.setValue("radius", _r.toFixed(3));
+ui.setValue("angle", _a.toFixed(3));
+});
 
-/*-delete
-component = publish(component);
-const ui = new Control(component, component.name);
-createFields(
-component, ui, reorder([
-...AudioComponent.sharedParameterNames,
-"polarInput", "radius", "angle",
-...webaudioParameters(component.webaudioNode).map(p => p.name)
-]), // reorder
-component.webaudioNode
-); // createFields
-component.ui = ui;
-*/
-
-
-subscribe(component, "radius", toCartesian);
-subscribe(component, "angle", toCartesian);
-subscribe(component, "positionX", toPolar);
-subscribe(component, "positionZ", toPolar);
+S(() => {
+const [_x, _z] = cartesian()
+ui.setValue("positionX", _x.toFixed(3));
+ui.setValue("positionZ", _z.toFixed(3));
+});
+}); // S.root
 
 return applyFieldInitializer(options, component);
 
-function toCartesian (object) {
-const r = object.radius, a = object.angle;
-object.positionX = r * Math.cos(a);
-object.positionZ = r * Math.sin(a);
-setCartesianCoordinates(object.positionX, object.positionY, object.positionZ);
-} // toCartesian
-
-function toPolar (object) {
-const x = object.positionX, z = object.positionZ;
-//console.debug("toPolar: ", x, z);
-object.radius = Math.sqrt(Math.pow(x, 2) + Math.pow(z, 2));
-object.angle = x === 0? 0 : Math.atan(z/x);
-if (z < 0) object.angle += Math.PI;
-setPolarCoordinates(object.radius, object.angle);
+function toPolar (_x, _y) {
+return [
+Math.sqrt(_x*_x + _y*_y),
+Math.atan2(_y, _x)
+];
 } // toPolar
 
-function setCartesianCoordinates (x, y, z) {
-//console.debug("setting cartesian: ", x, y, z);
-setValue(component.ui.nameToElement("positionX"), x);
-setValue(component.ui.nameToElement("positionY"), y);
-setValue(component.ui.nameToElement("positionZ"), z);
-//alert(`${x}, ${y}, ${z}`);
-} // setCartesianCoordinates
-
-function setPolarCoordinates (radius, angle) {
-//console.debug("setting polar: ", radius, angle);
-setValue(component.ui.nameToElement("radius"), radius);
-setValue(component.ui.nameToElement("angle"), angle);
-//alert(`${radius}, ${angle}`);
-} // setPolarCoordinates
-
+function toCartesian (_r, _a) {
+return [
+_r * Math.cos(_a),
+_r * Math.sin(_a)
+];
+} // toCartesian
 } // panner
 
 export function delay(options) {
@@ -344,7 +304,7 @@ function applyFieldInitializer (fd, component) {
 fd = fd.trim();
 if (!fd) return component;
 
-const container = component.ui.container.fields;
+const container = component.ui.fields;
 if (!container) return component;
 const ui = component.ui;
 
@@ -398,7 +358,7 @@ return component ;
 } getApp
 
 function walkComponentTree (component, _function) {
-console.debug("walking: ", component, _function);
+//console.debug("walking: ", component.name, _function);
 _function (component);
 if (component.children) component.children.forEach(c => walkComponentTree(c, _function));
 } // walkComponentTree

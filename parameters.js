@@ -33,8 +33,6 @@ _set(p.object, p.name, p.param, value);
 Object.defineProperty(component, p.name, descriptor);
 }); // forEach
 
-if (options.publish) component = publish(component);
-
 // create UI
 if (options.doNotCreateUi) return component;
 
@@ -42,6 +40,7 @@ const ui = new Control(component, component.name);
 createFields(
 component, ui,
 reorder([...AudioComponent.sharedParameterNames, ...webaudioParameters(node).map(p => p.name)]),
+"", // after
 node
 ); // createFields
 component.ui = ui;
