@@ -129,7 +129,7 @@ this.pre = audio.createBiquadFilter();
 this.post = audio.createBiquadFilter();
 this._preGain = audio.createGain();
 this._postGain = audio.createGain();
-this.xtc = new AudioWorkletNode(audio, "xtc");
+this.xtc = new AudioWorkletNode(audio, "xtc", {outputChannelCount: [2]});
 this._filterGainTypes = ["lowshelf", "highshelf", "peaking"];
 
 this.input
@@ -140,6 +140,9 @@ this.input
 //.connect(this._postGain)
 .connect(this.wet);
 
+// we can avoid getters and setters by copying AudioParam objects directly to this object's instance
+this.delay = this.xtc.parameters.get("delay");
+this.feedback = this.xtc.parameters.get("feedback");
 this.preFrequency = this.pre.frequency;
 this.preQ = this.pre.Q;
 this.preFilterGain = this.pre.gain;
@@ -148,15 +151,7 @@ this.preGain = this._preGain.gain;
 this.postFrequency = this.post.frequency;
 this.postQ = this.post.Q;
 this.postFilterGain = this.post.gain;
-
 } // constructor
-
-
-get delay () {return this.xtc.parameters.get("delay").value;}
-set delay (value) {this.xtc.parameters.get("delay").value = value;}
-
-get feedback () {return this.xtc.parameters.get("feedback").value;}
-set feedback (value) {this.xtc.parameters.get("feedback").value = value;}
 
 // exposed filter parameters
 get preType () {return this.pre.type;}
@@ -164,35 +159,6 @@ set preType (value) {this.pre.type = value;}
 
 get postType () {return this.post.type;}
 set postType (value) {this.post.type = value;}
-
-/*get preFrequency () {return this.pre.frequency.value;}
-set preFrequency (value) {this.pre.frequency.value = value;}
-
-get preQ () {return this.pre.Q.value;}
-set preQ (value) {this.pre.Q.value = value;}
-
-get postFrequency () {return this.post.frequency.value;}
-set postFrequency (value) {return this.post.frequency.value = value;}
-
-get postQ () {return this.post.Q.value;}
-set postQ (value) {return this.post.Q.value = value;}
-
-get preFilterGain () {return this.pre.gain.value;}
-set preFilterGain (value) {this.pre.gain.value = value;}
-
-get postFilterGain () {return this.post.gain.value;}
-set postFilterGain (value) {this.post.gain.value = value;}
-
-//get preGain () {return this._preGain.gain.value;}
-//set preGain (value) {this._preGain.gain.value = value;}
-//get postGain () {return this._postGain.gain.value;}
-//set postGain (value) {this._postGain.gain.value = value;}
-
-
-_usingFilterGain (filter) {return this._filterGainTypes.includes(filter.type);}
-*/
-
-
 } // class Xtc
 
 export class Player extends AudioComponent {
@@ -260,7 +226,11 @@ this._out.connect(this._feedBack).connect(this._in);
 get delay () {return this.webaudioNode.delayTime.value;}
 get feedBack() {return this._feedBack.gain.value;}
 
-set delay (value) {this.webaudioNode.delayTime.value = value;}
+set delay (value) {
+this.bypass = (Math.abs(value) < 0.00001);
+this.webaudioNode.delayTime.value = value;
+} // set delayTime
+
 set feedBack(value) {this._feedBack.gain.value = value;}
 } // class Delay
 

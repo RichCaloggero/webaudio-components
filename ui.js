@@ -6,6 +6,8 @@ import {isNumber, isString, isFunction, isAudioParam, isAudioParamMap} from "./p
 import {removeBlanks, separateWords} from "./parser.js";
 import {compileFunction} from "./automation.js";
 //import {storeValue} from "./save-restore.js";
+const statusMessageQueue = [];
+
 
 // this represents an action (button) with no state; it just returns it's input
 function Action (value) {return value;}
@@ -263,9 +265,10 @@ update(e.target);
 } // booleanHelper
 
 export function createFields (component, ui, propertyNames, after = "", node = null) {
-const container = ui.container.querySelector(".fields");
-const fields = propertyNames.map(name => createField(component, node, name)).filter(field => field);
-//console.debug("createFields: ", fields);
+const container = ui.fields;
+
+const fields = propertyNames.map(name => createField(component, name)).filter(field => field);
+console.debug("createFields: ", fields);
 
 if (after) {
 const afterField = after instanceof Number? container.children[after] : ui.nameToField(after);
@@ -278,12 +281,9 @@ fields.reverse().forEach(field => afterField.insertAdjacentElement("afterEnd", f
 fields.forEach(field => container.appendChild(field));
 } // if
 
-function createField (component, node, property) {
+function createField (component, property) {
 if (isAudioParam(component[property]) || typeof(component[property]) === "number") {
-const constraints = calculateConstraints(node, property);
-if (!node) constraints.defaultValue =
-isAudioParam(component[property])? component[property].defaultValue : component[property];
-
+const constraints = calculateConstraints(component, property);
 return ui.number(Object.assign({}, constraints, AudioComponent.constraints[property]));
 
 } else if (typeof(component[property]) === "boolean") {
@@ -303,6 +303,8 @@ if (!node) return constraints;
 const p = node[property] || node.parameters?.get(property) || null;
 if (!p) return constraints;
 
+if (isNumber(p)) return Object.assign(constraints, {defaultValue: p});
+
 if (isAudioParam(p)) return {
 name: property,
 min: p.minValue,
@@ -311,7 +313,6 @@ defaultValue: p.defaultValue,
 step: calculateStepSize(p.defaultValue)
 };
 
-constraints.defaultValue = isNumber(p)?p : 0;
 return constraints;
 } // calculateConstraints
 } // createField
@@ -415,7 +416,7 @@ setTimeout(() => focusFrom.focus(), 0);
 export function statusMessage (text, append, ignoreQueue) {
 const status = document.querySelector(".root .status, #status");
 if (!status) {
-alert(text);
+//alert(text);
 return;
 } // if
 

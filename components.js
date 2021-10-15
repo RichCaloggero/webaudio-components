@@ -1,6 +1,6 @@
 import S from "./S.module.js";
 import {Control, update, setValue, createFields, statusMessage} from "./ui.js";
-import {audioContext, AudioComponent, MidSide, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
+import {audioContext, AudioComponent, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
 import {wrapWebaudioNode, webaudioParameters, reorder} from "./parameters.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {getAutomation,  enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval} from "./automation.js";
@@ -9,6 +9,8 @@ import * as dom from "./dom.js";
 import {union} from "./setops.js";
 import {publish, subscribe} from "./observer.js";
 await audioContext.audioWorklet.addModule("./dattorroReverb.worklet.js");
+await audioContext.audioWorklet.addModule("./midSide.worklet.js");
+await audioContext.audioWorklet.addModule("./stereoProcessor.worklet.js");
 
 
 /// app (top level UI)
@@ -103,15 +105,10 @@ return component;
 /// wrapped webaudio nodes
 
 export function player (options) {
-const component = new Player(audioContext);
+const component = wrapWebaudioNode(new Player(audioContext));
 
-const ui = new Control(component, "player");
-createFields(
-component, ui,
-["media", "play", "position"]
-); // createFields
-component.ui = ui;
-const position = ui.nameToElement("position");
+if (component.hasMediaElement) {
+const position = component.ui.nameToElement("position");
 
 component._media.addEventListener("timeupdate", e => {
 if (!component._media.seeking) position.value = Number(e.target.currentTime.toFixed(1))
@@ -119,7 +116,7 @@ if (!component._media.seeking) position.value = Number(e.target.currentTime.toFi
 position.step = 0.1;
 
 component._media.addEventListener("error", e => statusMessage(`cannot load media from ${e.target.src}`));
-
+} // if
 
 return applyFieldInitializer(options, component);
 } // player
@@ -154,6 +151,10 @@ return applyFieldInitializer(options, wrapWebaudioNode(
 new AudioWorkletNode(audioContext, "dattorroReverb")
 ));
 } // reverb
+
+export function stereoPanner (options) {
+return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createStereoPanner()));
+} // stereoPanner
 
 export function panner (options) {
 let component = wrapWebaudioNode(audioContext.createPanner());
@@ -211,7 +212,7 @@ return applyFieldInitializer(options, component);
 } // delay
 
 
-export function xtc (options = `
+export function xtc (options /*= `
 bypass; mix=0.25; delay=0.00007; feedback=0.85;
 preType=bandpass;
 preFrequency=803.838 | s(t/2, 800, 1000);
@@ -222,54 +223,21 @@ postType=peaking;
 postFrequency=851.71 | c(t/3, 850, 1050);
 postQ=0.21 | s(t/2, 0.2, 0.9);
 postFilterGain=7
-`) {
-const component = new Xtc(audioContext);
-const ui = new Control(component, "xtc");
-
-createFields(
-component, ui,
-[...AudioComponent.sharedParameterNames,
-"delay", "feedback",
-"preType", "preFrequency", "preQ", "preFilterGain", "preGain",
-"postType", "postFrequency", "postQ", "postFilterGain"
-]); // createFields
-component.ui = ui;
-
-//subscribe(component, "preType", updatePreGain);
-//subscribe(component, "postType", updatePostGain);
-
-
-return applyFieldInitializer(options, component);
-
-
-/*function updatePreGain (component, name, type) {
-if (component._filterGainTypes.includes(type)) {
-component.ui.nameToField("preFilterGain").hidden = false;
- component.ui.nameToField("preGain").hidden = true;
-} else {
-component.ui.nameToField("preFilterGain").hidden = true;
- component.ui.nameToField("preGain").hidden = false;
-} // if
-} // updatePreGain 
-
-function updatePostGain (component, name, type) {
-if (component._filterGainTypes.includes(type)) {
-component.ui.nameToField("postFilterGain").hidden = false;
- component.ui.nameToField("postGain").hidden = true;
-} else {
-component.ui.nameToField("postFilterGain").hidden = true;
- component.ui.nameToField("postGain").hidden = false;
-} // if
-} // updatePostGain 
-*/
-
+`*/) {
+return applyFieldInitializer(options, wrapWebaudioNode(new Xtc(audioContext)));
 } // xtc
 
 export function midSide (options = "midGain=1; sideGain=1") {
-const ms = new MidSide(audioContext);
-ms.ui = new Control(ms, "mid side processor");
-createFields(ms, ms.ui, [...AudioComponent.sharedParameterNames, "midGain", "sideGain"]);
-return applyFieldInitializer(options, ms);
+return applyFieldInitializer(options,
+wrapWebaudioNode(new AudioWorkletNode(audioContext, "midSide", {outputChannelCount: [2]}))
+);
+} // midSide
+
+export function stereoProcessor (options = "") {
+options = `title = Stereo Processor; ${options}`;
+return applyFieldInitializer(options,
+wrapWebaudioNode(new AudioWorkletNode(audioContext, "stereoProcessor", {outputChannelCount: [2]}))
+);
 } // midSide
 
 /// containers
@@ -300,8 +268,7 @@ return applyFieldInitializer(options, component);
 
 /// helpers
 
-function applyFieldInitializer (fd, component) {
-fd = fd.trim();
+function applyFieldInitializer (fd = null, component) {
 if (!fd) return component;
 
 const container = component.ui.fields;
@@ -315,7 +282,7 @@ const alwaysShow = new Set(["bypass", "silentBypass"]);
 
 
 // following this operation, initializers will contain the set of descriptors to be initialized, while show and hide will contain field names
-const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFieldDescriptor(fd) : fd)
+const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFieldDescriptor(fd.trim()) : fd)
 .filter(d => d.name)
 .filter(d => (
 d.name === "hide")? (add(hide, d.defaultValue), false) : true

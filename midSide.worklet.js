@@ -17,7 +17,7 @@ automationRate: "k-rate"
 
 constructor () {
 super ();
-console.debug(`xtc.worklet ready.`);
+console.debug(`midSide.worklet ready.`);
 } // constructor
 
 process (inputs, outputs, parameters) {
@@ -29,7 +29,8 @@ const outputBuffer = outputs[0];
 const channelCount = inputBuffer.length;
 
 
-if (channelCount === 2) {
+if (channelCount !== 2) return true;
+
 const sampleCount = inputBuffer[0].length;
 
 for (let i=0; i<sampleCount; i++) {
@@ -37,18 +38,18 @@ for (let i=0; i<sampleCount; i++) {
 = decode(...encode(inputBuffer[0][i], inputBuffer[1][i], midGain, sideGain));
 //= [inputBuffer[0][i], inputBuffer[1][i]];
 } // loop over samples
-} // if channelCount === 2
 return true;
 
 function encode (left, right, midGain, sideGain) {
-const mid = (left + right);
-const side = (left-right);
+const mid = 0.5 * (left + right);
+const side = (right - left);
+
 return [midGain*mid, sideGain*side];
 } // encode
 
 function decode (mid, side) {
-const left = 0.5*(mid+side);
-const right = 0.5*(mid-side);
+const left = mid - side;
+const right = mid + side;
 return [left, right];
 } // decode
 } // process

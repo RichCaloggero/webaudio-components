@@ -35,7 +35,6 @@ constructor (options) {
 super (options);
 this.initializeDelayBuffer();
 this.blockCount = 0;
-this.last = [[0,0], [0,0]];
 console.debug(`xtc.worklet ready.`);
 } // constructor
 
@@ -55,10 +54,7 @@ const inputBuffer = inputs[0];
 const outputBuffer = outputs[0];
 const channelCount = inputBuffer.length;
 
-if (channelCount > 2) {
-console.error("channel count must be <= 2");
-return false;
-} // if
+if (channelCount !== 2) return true;
 
 if (delay > 0 && delay !== this.delay) {
 //console.debug(`dx: ${dx}`);
@@ -69,7 +65,6 @@ this.initializeDelayBuffer();
 //console.debug("deallocated buffers");
 } // if
 
-if (channelCount > 0) {
 //console.debug(`frame ${this.blockCount++}, delay ${delay}, ${this.delay}, ${delayLength}`);
 
 for (let channel = 0; channel < channelCount; channel++) {
@@ -77,8 +72,6 @@ const sampleCount = inputBuffer[channel].length;
 
 for (let i=0; i<sampleCount; i++) {
 const sample = inputBuffer[channel][i];
-this.last[channel][1] = this.last[channel][0];
-this.last[channel][0] = sample;
 
 if (delay === 0) {
 writeOutputSample(channel, i, -1*sample);
@@ -95,7 +88,6 @@ writeOutputSample(channel, i, -0.5*delayedSample);
 } // loop over samples
 
 } // loop over channels
-} // if channelCount > 0
 
 return true;
 

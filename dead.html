@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="X-Content-Type-Options" content="nosniff">
-
-<title>XTC</title>
+<title>Dead</title>
 </head>
 <body> 
 
@@ -18,8 +17,14 @@ window.app = audio.app("enableAutomation; automationInterval=0.1",
 audio.series("hide=mix, bypass, silentBypass",
 window.player = audio.player(`
 show=media, play, position;
-media=media/Grateful Dead - 11_17_1973 - Pauley Pavilion.opus
+media=./media/cumberland.flac;
 `), // player
+
+audio.parallel(
+audio.stereoProcessor("rotation = -40"),
+audio.stereoProcessor("rotation = 40")
+), // parallel
+
 window.xtc = audio.xtc(`
 mix=0.3;
 delay=0.00007;
