@@ -17,18 +17,19 @@ await audioContext.audioWorklet.addModule("./stereoProcessor.worklet.js");
 
 export function app (options, child) {
 if (arguments.length === 1) {
-child = arguments[0];
+child = options;
 options = "";
-} else if (arguments.length !== 2) {
-alert ("app: must have either 1 or 2 arguments");
-return;
 } // if
 
-options = `show=saveOnExit, storeAll, restoreAll; ${options}`;
+if (!(child instanceof AudioComponent)) {
+alert ("no component supplied to app; aborting");
+throw new error("no component given to app");
+} // if
+
 const component = {
 name: "app",
 _initialized: false,
-type: "app", 
+_type: "app", 
 _id: `app-${componentId.next().value}`,
 children: [child],
 automationType: "ui",
@@ -238,33 +239,40 @@ return applyFieldInitializer(options, createUi(new Parallel(audioContext, childr
 /// helpers
 
 function applyFieldInitializer (fd = null, component) {
-if (!fd) return component;
+//console.debug("applyFieldSescriptors: ", component.name, component);
+//if (!fd) return component;
 
 const container = component.ui.fields;
 if (!container) return component;
 const ui = component.ui;
 
 const initializers = new Set();
-const hide = new Set();
+const hide = new Set(
+component._type === "container"? ["bypass", "silentBypass", "mix"]
+: []
+);
 const show = new Set();
-const alwaysShow = new Set(["bypass", "silentBypass"]);
+const alwaysShow = new Set(
+component._type === "container"? []
+: ["bypass", "silentBypass"]
+);
 
 
 // following this operation, initializers will contain the set of descriptors to be initialized, while show and hide will contain field names
+// defaultValue will contain a comma separated list of field names (in the case of hide / show), otherwise a fields'd efault value
 const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFieldDescriptor(fd.trim()) : fd)
-.filter(d => d.name)
-.filter(d => (
-d.name === "hide")? (add(hide, d.defaultValue), false) : true
-).filter(d => (d.name === "show")?
-(add(show, d.defaultValue), false) : true
-).filter(d => d.name === "title"?
-(container.parentElement.querySelector(".component-title").textContent = d.defaultValue, false) : true
- ).forEach(d => initializers.add(d));
+.filter(d => d.name) // filters out descriptors with no name
+.filter(d => (d.name === "hide")? (add(hide, d.defaultValue), false) : true)
+.filter(d => (d.name === "show")? (add(show, d.defaultValue), false) : true)
+.filter(d => d.name === "title"? (container.parentElement.querySelector(".component-title").textContent = d.defaultValue, false) : true)
+.forEach(descriptor => initializers.add(descriptor));
+//console.debug("applyFieldInitializers: ", component.name, hide, show, initializers);
 
-// show all fields if show contains exactly one "*"
-if (show.size === 1 && show.has("*")) {
-show.delete("*");
-container.querySelectorAll(".field").forEach(f => show.add(f.dataset.name));
+
+// hide all fields if hide contains exactly one "*"
+if (hide.size === 1 && hide.has("*")) {
+hide.delete("*");
+component.ui.allFieldNames.forEach(name => hide.add(name));
 } // if
 
 ui._show = union(show, alwaysShow);
@@ -273,16 +281,8 @@ ui._initializers = initializers;
 return component;
 
 function add (set, values) {
-addValues(set, trimValues(values.split(",")));
+values.split(",").forEach(value => set.add(value.trim()));
 } // add
-
-
-function addValues (s, values) {
-values.forEach(x => s.add(x));
-} // addValues
-
-function trimValues(a) {return a.map(x => x.trim());}
-
 } // applyFieldInitializer
 
 

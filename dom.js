@@ -30,53 +30,35 @@ container.querySelector(".component-title").setAttribute("aria-level", depth);
 } // setDepth
 
 export function showFields (component) {
-//console.debug("showFields: ", component);
+//console.debug("showFields: ", component.name, component);
 const ui = component.ui;
-if (!ui._initializers) return;
+if (ui.allFieldNames.length === 0) return;
 const initializers = ui._initializers;
 const initialized = new Set();
 const hide = ui._hide;
 const show = ui._show;
 const container = ui.fields;
 
-//console.debug("showFields: initializing ", initializers);
+//console.debug("showFields: ", component.name, hide, show, initializers);
 initializers.forEach(initialize);
 
-const fieldsToShow = [...symmetricDifference(
-union(union(initialized, show), AudioComponent.sharedParameterNames),
-hide
-)].map(name => component.ui.nameToField(name))
-.filter(field => field);
-//console.debug("fieldsToShow: ", component.name, container.label, fieldsToShow);
+hide.forEach(name => component.ui.nameToField(name).hidden = true);
+//if (component.name === "series") debugger;
 
-if (fieldsToShow.length === 0) {
-if (component._type === "container") {
-container.parentElement.querySelector(".component-title").hidden = true;
-container.parentElement.setAttribute("role", "presentation");
+if (component._type === "container" && hide.size === ui.allFieldNames.length) {
+ui.container.querySelector(".component-title").hidden = true;
+ui.container.setAttribute("role", "presentation");
 } // if
 
-} else {
-fieldsToShow.forEach(field => field.hidden = false);
-} // if
-
-// handle hide on bypass
-const bypass = component.ui.nameToField("bypass");
-//console.debug("showFields: ", bypass, component.name);
-if (bypass) {
-const hideOnBypass = fieldsToShow.filter(x => x.dataset.name !== "bypass")
-.filter(x => x.dataset.name !== "silentBypass");
-
-//console.debug("hideOnBypass for ", component.name, " / ", component.ui.label, " / ", component._id);
-//console.debug("- ", hideOnBypass.length, " fields");
-handleHideOnBypass(component.ui.signals.bypass, hideOnBypass);
-} // if
+if (component.ui.nameToField("bypass")?.hidden === false) handleHideOnBypass(component, ui.allFieldNames.filter(name => name !== "bypass"));
 return;
 
-function handleHideOnBypass (bypassSignal, hideOnBypass) {
+function handleHideOnBypass (component, hideOnBypass) {
+const bypassSignal = component.ui.signals.bypass;
 S.root(() => {
 S(() => {
 const hide = bypassSignal();
-hideOnBypass.forEach(x => x.hidden = hide);
+hideOnBypass.forEach(name => ui.nameToField(name).hidden = hide);
 });
 }); // S.root
 } // handleHideOnBypass

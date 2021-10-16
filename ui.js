@@ -34,6 +34,7 @@ throw new Error("need a receiver");
 this.receiver = receiver;
 this.label = label;
 this.signals = Object.create(null);
+this.allFieldNames = [];
 this.container = document.createElement("div");
 this.fields = document.createElement("div");
 this.fields.className = "fields";
@@ -198,6 +199,7 @@ return list;
 /// helpers
 
 function createField (receiver, name, dataType, defaultValue, html) {
+//if (name === "type") console.debug("type field: ", component);
 const field = document.createElement("div");
 try {
 field.insertAdjacentHTML("afterBegin", html);
@@ -205,7 +207,7 @@ field.insertAdjacentHTML("afterBegin", html);
 throw new Error(`createField: invalid markup - ${e}`);
 } // catch
 
-field.hidden = true;
+//field.hidden = true;
 field.className = `${dataType.name.toLowerCase()} field ${name}`;
 field.dataset.name = name;
 field.dataset.dataType = dataType.name;
@@ -281,6 +283,7 @@ fields.reverse().forEach(field => afterField.insertAdjacentElement("afterEnd", f
 } else {
 fields.forEach(field => container.appendChild(field));
 } // if
+return propertyNames;
 
 function createField (component, property) {
 if (isAudioParam(component[property]) || typeof(component[property]) === "number") {

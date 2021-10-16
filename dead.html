@@ -13,12 +13,9 @@ import * as audio from "./components.js";
 
 const commonOptions = "bypass, silentBypass, mix";
 
-window.app = audio.app("enableAutomation; automationInterval=0.1",
-audio.series("hide=mix, bypass, silentBypass",
-window.player = audio.player(`
-show= play, position;
-media=./media/cumberland.flac;
-`), // player
+window.app = audio.app("automationInterval=0.1",
+audio.series(
+window.player = audio.player("media=./media/cumberland.flac"), // player
 
 audio.parallel(
 audio.stereoProcessor("rotation = -40"),

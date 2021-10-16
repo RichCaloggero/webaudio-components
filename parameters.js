@@ -5,6 +5,7 @@ import {intersection, difference} from "./setops.js";
 const parameterMap = new Map();
 const ignoreList = new Set([
 "name", "id",
+"children", "components",
 "numberOfInputs", "numberOfOutputs",
 "channelCountMode", "channelInterpretation",
 ]);
@@ -18,7 +19,7 @@ function wrapAudioNode (node, name, options = {}) {
 //console.debug("wrapping ", node);
 // build component around node
 const component = new AudioComponent(node.context, name || node.constructor.name);
-component.type = "AudioNode";
+component._type = "AudioNode";
 component.audioNode = node;
 
 if (node.numberOfInputs > 0) component.input.connect(node);
@@ -36,11 +37,11 @@ return component;
 } // wrapAudioNode
 
 function buildUi (component, name = component.name) {
-console.debug("buildUi: ", component);
+//console.debug("buildUi: ", component);
 
 const ui = new Control(component, name);
 
-createFields(
+ui.allFieldNames = createFields(
 component, ui,
 [...AudioComponent.sharedParameterNames, ...filterIgnored(allParameterNames(component))]
 ); // createFields

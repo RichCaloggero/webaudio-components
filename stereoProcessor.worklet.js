@@ -29,7 +29,7 @@ automationRate: "k-rate"
 
 constructor () {
 super ();
-console.log("AudioWorkletProcessor initialized...");
+console.log("StereoProcessor ready.");
 } // constructor
 
 process (inputs, outputs, parameters) {

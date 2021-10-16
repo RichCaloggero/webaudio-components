@@ -168,6 +168,12 @@ postType: this.descriptor("type", this._post),
 export class Player extends AudioComponent {
 constructor (audio) {
 super (audio, "player");
+Object.defineProperties(this, {
+bypass: {},
+silentBypass: {},
+mix: {}
+});
+
 this.input = null;
 this._audioElement = document.createElement("audio");
 
