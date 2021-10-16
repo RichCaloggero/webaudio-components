@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="X-Content-Type-Options" content="nosniff">
 
-<title>XTC</title>
+<title>stereo panner</title>
 </head>
 <body> 
 
@@ -20,7 +20,8 @@ audio.parallel(
 window.panner = audio.stereoPanner("show=*"),
 
 audio.series(
-window.delay = audio.delay("delay=0"),
+//window.delay = audio.delay("delay=0"),
+audio.reverseStereo(""),
 audio.stereoPanner("show=*"),
 audio.filter("show = frequency, Q; type=lowpass")
 ) // series

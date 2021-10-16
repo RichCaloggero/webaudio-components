@@ -132,13 +132,7 @@ return applyFieldInitializer(options, createUi(audioContext.createGain()));
 } // gain
 
 export function reverseStereo (options) {
-const component = new ReverseStereo (audioContext);
-const ui = new Control(component, "reverseStereo");
-
-createFields(component, ui, AudioComponent.sharedParameterNames);
-
-component.ui = ui;
-return applyFieldInitializer(options, component);
+return applyFieldInitializer(options, createUi(new ReverseStereo(audioContext)));
 } // reverseStereo
 
 export function filter (options) {
@@ -230,25 +224,15 @@ createUi(new AudioWorkletNode(audioContext, "stereoProcessor", {outputChannelCou
 export function series (...children) {
 const options = children[0] instanceof AudioComponent?
 "" : children.shift();
-const component = new Series (audioContext, children);
-component.type = "container";
-const ui = new Control(component, "series");
-createFields(component, ui, AudioComponent.sharedParameterNames);
 
-component.ui = ui;
-return applyFieldInitializer(options, component);
+return applyFieldInitializer(options, createUi(new Series (audioContext, children)));
 } // series
 
 export function parallel (...children) {
 const options = children[0] instanceof AudioComponent?
 "" : children.shift();
-const component = new Parallel(audioContext, children);
-component.type = "container";
-const ui = new Control(component, "parallel");
-createFields(component, ui, AudioComponent.sharedParameterNames);
 
-component.ui = ui;
-return applyFieldInitializer(options, component);
+return applyFieldInitializer(options, createUi(new Parallel(audioContext, children)));
 } // parallel
 
 /// helpers

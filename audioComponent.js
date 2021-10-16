@@ -29,6 +29,7 @@ delay: {defaultValue: 0, min: 0, max: 1, step: 0.000001},
 
 constructor (audio, name, parent = null) {
 //console.debug("audioComponent: instantiating ", name);
+this._type = "component";
 this.audio = audio;
 this.name = name || "component";
 this.parent = parent;
@@ -249,6 +250,7 @@ set feedBack(value) {this._feedBack.gain.value = value;}
 export class Split extends AudioComponent {
 constructor (audio, components, swapInputs, swapOutputs) {
 super (audio, "split");
+this._type = "container";
 if (components.length === 0 || components.length > 2) this._error("must have at least one, and no more than two child elements");
 
 this.splitter = this.audio.createChannelSplitter(2);
@@ -283,6 +285,7 @@ console.log(`- channel 2: ${channel2.name} connected`);
 export class Series extends AudioComponent {
 constructor (audio, components) {
 super (audio, "series");
+this._type = "container";
 if (components.length < 2) this._error("need two or more components");
 
 const first = components[0];
@@ -323,6 +326,7 @@ console.log(`- connected ${last.name} to ${this.name} wet`);
 export class Parallel extends AudioComponent {
 constructor (audio, components) {
 super (audio, "parallel");
+this._type = "container";
 if (components.length < 2) this._error("need two or more components");
 
 //console.debug(`parallel: connecting ${components.length} components in parallel:`);

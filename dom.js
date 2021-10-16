@@ -18,7 +18,7 @@ if (component.children) component.children.forEach(child => {
 domChildren.appendChild(child.ui.container);
 buildDom(
 child,
-dom.getAttribute("role") !== "presentation" && child.type === "container"? depth+1 : depth,
+dom.getAttribute("role") !== "presentation" && child._type === "container"? depth+1 : depth,
 component
 ); // buildDom
 }); // forEach child
@@ -50,7 +50,7 @@ hide
 //console.debug("fieldsToShow: ", component.name, container.label, fieldsToShow);
 
 if (fieldsToShow.length === 0) {
-if (component.type === "container") {
+if (component._type === "container") {
 container.parentElement.querySelector(".component-title").hidden = true;
 container.parentElement.setAttribute("role", "presentation");
 } // if
