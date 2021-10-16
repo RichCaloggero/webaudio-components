@@ -52,6 +52,17 @@ this.bypass = false;
 //console.debug(`component ${name} created`);
 } // constructor
 
+property (name1, name2 = name1, node = this.audioNode) {
+const descriptor = {
+enumerable: true,
+get: function () {return node[name2];},
+set: function (value) {node[name2] = value;}
+};
+
+return (node === this.audioNode)?
+Object.defineProperty(this, name1, descriptor) : descriptor;
+} // property
+
 get id () {
 return `${this.parent? this.parent.id + "." : ""}${name}-${this._id}`;
 } // get id
@@ -125,79 +136,77 @@ this.input.connect(this.ms).connect(this.wet);
 export class Xtc extends AudioComponent {
 constructor (audio) {
 super (audio, "xtc");
-this.pre = audio.createBiquadFilter();
-this.post = audio.createBiquadFilter();
+this._pre = audio.createBiquadFilter();
+this._post = audio.createBiquadFilter();
 this._preGain = audio.createGain();
 this._postGain = audio.createGain();
-this.xtc = new AudioWorkletNode(audio, "xtc", {outputChannelCount: [2]});
+this.audioNode = new AudioWorkletNode(audio, "xtc", {outputChannelCount: [2]});
 this._filterGainTypes = ["lowshelf", "highshelf", "peaking"];
 
 this.input
-.connect(this.pre)
-.connect(this._preGain)
-.connect(this.xtc)
-.connect(this.post)
-//.connect(this._postGain)
+.connect(this._pre)
+.connect(this.audioNode)
+.connect(this._post)
 .connect(this.wet);
 
 // we can avoid getters and setters by copying AudioParam objects directly to this object's instance
-this.delay = this.xtc.parameters.get("delay");
-this.feedback = this.xtc.parameters.get("feedback");
-this.preFrequency = this.pre.frequency;
-this.preQ = this.pre.Q;
-this.preFilterGain = this.pre.gain;
-this.preGain = this._preGain.gain;
+this.delay = this.audioNode.parameters.get("delay");
+this.feedback = this.audioNode.parameters.get("feedback");
+this.preFrequency = this._pre.frequency;
+this.preQ = this._pre.Q;
+this.preGain = this._pre.gain;
 
-this.postFrequency = this.post.frequency;
-this.postQ = this.post.Q;
-this.postFilterGain = this.post.gain;
+this.postFrequency = this._post.frequency;
+this.postQ = this._post.Q;
+this.postGain = this._post.gain;
+
+// these must be getter/setter pairs
+this.property("preType", "type");
+this.property("postType", "type");
 } // constructor
-
-// exposed filter parameters
-get preType () {return this.pre.type;}
-set preType (value) {this.pre.type = value;}
-
-get postType () {return this.post.type;}
-set postType (value) {this.post.type = value;}
 } // class Xtc
 
 export class Player extends AudioComponent {
-constructor (audio, media) {
+constructor (audio) {
 super (audio, "player");
 this.input = null;
-this._media = null;
+this._audioElement = document.createElement("audio");
 
+Object.defineProperties(this, {
+_hasMediaElement : {enumerable: true,
+get: function () {return this.source instanceof MediaElementAudioSourceNode;}
+}, // _hasMediaElement
+
+media: {enumerable: true,
+get: function () {return this._hasMediaElement? this._audioElement.src : "";},
+set: function (media) {
 if (media instanceof AudioBuffer) {
-this.source = createBufferSource(media);
+this.source = audio.createBufferSource(media);
 
 } else {
-this._media = document.createElement("audio");
-this.source = audio.createMediaElementSource(this._media);
-this._media.setAttribute("crossorigin", "anonymous");
+this.source = audio.createMediaElementSource(this._audioElement);
+this._audioElement.setAttribute("crossorigin", "anonymous");
 } // if
 
 this.source.connect(this.output);
+}
+}, // set media
+
+play: {enumerable: true,
+get: function () {return this._hasMediaElement? !this._audioElement.paused : false;},
+set: function (value) {if (this._hasMediaElement) value? this._play() : this._pause();}
+}, // play
+
+position: {
+enumerable: true,
+get: function () {return this._hasMediaElement? this._audioElement.currentTime : 0;},
+set: function (value) {if (this._hasMediaElement) this._audioElement.currentTime = clamp(value, 0, this._audioElement.duration);}
+} // position
+}); // defineProperties
 } // constructor
 
-get hasMediaElement () {return this._media instanceof HTMLMediaElement;}
-
-get media () {return this.hasMediaElement? this._media.src : null;}
-set media (value) {
-if (this.hasMediaElement) {
-this._media.src = value;
-this.play = false;
-} // if
-} // set media
-
-
-get play () {return this.hasMediaElement? !this._media.paused : false;}
-set play (value) {if (this.hasMediaElement) value? this._play() : this._pause();}
-
-get position () {return this.hasMediaElement? this._media.currentTime : 0;}
-set position (value) {if (this.hasMediaElement) this._media.currentTime = clamp(value, 0, this._media.duration);}
-
-_play () {if (this.hasMediaElement) this._media.play();}
-_pause () {if (this.hasMediaElement) this._media.pause();}
+_play () {if (this._hasMediaElement) this._audioElement.play();}
+_pause () {if (this._hasMediaElement) this._audioElement.pause();}
 
 } // class Player
 

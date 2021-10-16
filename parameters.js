@@ -10,16 +10,16 @@ const ignoreList = new Set([
 ]);
 
 export function createUi (component) {
-if (isAudioNode(component)) component = wrapAudioNode(audioContext);
-return ui(component);
+if (isAudioNode(component)) component = wrapAudioNode(component);
+return buildUi(component);
 } // createUi 
 
-function wrapAudioNode (node, options = {}) {
+function wrapAudioNode (node, name, options = {}) {
 //console.debug("wrapping ", node);
 // build component around node
-const component = new AudioComponent(node.context, node.constructor.name);
+const component = new AudioComponent(node.context, name || node.constructor.name);
 component.type = "AudioNode";
-component.webaudioNode = node;
+component.audioNode = node;
 
 if (node.numberOfInputs > 0) component.input.connect(node);
 else component.input = null;
@@ -30,30 +30,33 @@ else component.output = null;
 if (!component.input && !component.output) component._error("no connections possible; both input and output are null");
 
 // create getters and setters on component which talk to the webaudio node inside
-promoteParameters(component, component.audioNode);
+promoteParameters(component, node);
 return component;
 
 } // wrapAudioNode
 
-function ui (component) {
+function buildUi (component) {
+console.debug("buildUi: ", component);
+debugger;
+
 const ui = new Control(component, component.name);
+
 createFields(
 component, ui,
-[...AudioComponent.sharedParameterNames, ...filterIgnored(allProperties(component))],
-"", // after
+[...AudioComponent.sharedParameterNames, ...filterIgnored(allParameterNames(component))]
 ); // createFields
-component.ui = ui;
 
+component.ui = ui;
 return component;
 } // wrapWebaudioNode
 
-promoteParameters (node, object) {
+function promoteParameters (component, node) {
 allParameters(node).forEach(p => {
 const [name, value] = p;
-if (isAudioParam(value)) object[name] = value;
-else Object.defineProperty(object, name, createDescriptor(node, name));
+if (isAudioParam(value)) component[name] = value;
+else Object.defineProperty(component, name, createDescriptor(node, name));
 }); // forEach
-return object;
+return component;
 } // promoteParameters
 
 function createDescriptor (node, name) {
@@ -75,9 +78,11 @@ const p = node[name];
 if (validParameter(p)) {
 if (isAudioParamMap(p))
 parameters = parameters.concat([...p.entries()]);
-else props.push([name, p]);
+else parameters.push([name, p]);
 } // if
 } // for
+
+if (node instanceof AudioComponent) parameters = parameters.concat(allParameters(Reflect.getPrototypeOf(node)));
 
 return parameters;
 } // allParameters
@@ -110,11 +115,11 @@ return list.filter(x => not(isPrivate(x)))
 .filter(x => not(ignoreList.has(x)));
 } // ignore
  
-export function isAudioNode (node) {return node && node instanceof AudioNode;}
-export function isAudioWorkletNode (node) {return node && node instanceof AudioWorkletNode;}
-export function isAudioParam (param) {return param && param instanceof AudioParam;}
-export function isAudioParamMap (m) {return m && m instanceof AudioParamMap;}
-export function isFunction (f) {return f && f instanceof Function;}
+export function isAudioNode (node) {return node instanceof AudioNode;}
+export function isAudioWorkletNode (node) {return node instanceof AudioWorkletNode;}
+export function isAudioParam (param) {return param instanceof AudioParam;}
+export function isAudioParamMap (m) {return m instanceof AudioParamMap;}
+export function isFunction (f) {return f instanceof Function;}
 export function isNumber (n) {return typeof(n) === "number" || n instanceof Number;}
 export function isString (s) {return typeof(s) === "string" || s instanceof String;}
 export function isBoolean (x) {return typeof(x) === "boolean";}

@@ -264,14 +264,15 @@ update(e.target);
 }); // click handler
 } // booleanHelper
 
-export function createFields (component, ui, propertyNames, after = "", node = null) {
+export function createFields (component, ui, propertyNames, after = "") {
+//console.debug("createFields: ", component, " propertyNames = ", propertyNames);
 const container = ui.fields;
 
 const fields = propertyNames.map(name => createField(component, name)).filter(field => field);
-console.debug("createFields: ", fields);
+//console.debug("createFields: ", fields);
 
 if (after) {
-const afterField = after instanceof Number? container.children[after] : ui.nameToField(after);
+const afterField = after instanceof Number? container.children[after] : after && ui.nameToField(after);
 
 if (afterField instanceof HTMLElement && afterField.matches(".field")) {
 fields.reverse().forEach(field => afterField.insertAdjacentElement("afterEnd", field));

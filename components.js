@@ -1,7 +1,7 @@
 import S from "./S.module.js";
 import {Control, update, setValue, createFields, statusMessage} from "./ui.js";
 import {audioContext, AudioComponent, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
-import {wrapWebaudioNode, webaudioParameters, reorder} from "./parameters.js";
+import {createUi, reorder} from "./parameters.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {getAutomation,  enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval} from "./automation.js";
 import {keyboardHandler} from "./keyboardHandler.js";
@@ -105,18 +105,13 @@ return component;
 /// wrapped webaudio nodes
 
 export function player (options) {
-const component = wrapWebaudioNode(new Player(audioContext));
+const component = createUi(new Player(audioContext));
 
-if (component.hasMediaElement) {
-const position = component.ui.nameToElement("position");
+component._audioElement.addEventListener("error", e => statusMessage(`cannot load media from ${e.target.src}`));
 
-component._media.addEventListener("timeupdate", e => {
-if (!component._media.seeking) position.value = Number(e.target.currentTime.toFixed(1))
+component._audioElement.addEventListener("timeupdate", e => {
+if (!component._media.seeking) component.ui.nameToElement("position").value = Number(e.target.currentTime.toFixed(1))
 });
-position.step = 0.1;
-
-component._media.addEventListener("error", e => statusMessage(`cannot load media from ${e.target.src}`));
-} // if
 
 return applyFieldInitializer(options, component);
 } // player
@@ -129,7 +124,7 @@ return component;
 } // destination
 
 export function gain (options) {
-return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createGain()));
+return applyFieldInitializer(options, createUi(audioContext.createGain()));
 } // gain
 
 export function reverseStereo (options) {
@@ -143,21 +138,21 @@ return applyFieldInitializer(options, component);
 } // reverseStereo
 
 export function filter (options) {
-return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createBiquadFilter()));
+return applyFieldInitializer(options, createUi(audioContext.createBiquadFilter()));
 } // filter
 
 export function reverb (options) {
-return applyFieldInitializer(options, wrapWebaudioNode(
+return applyFieldInitializer(options, createUi(
 new AudioWorkletNode(audioContext, "dattorroReverb")
 ));
 } // reverb
 
 export function stereoPanner (options) {
-return applyFieldInitializer(options, wrapWebaudioNode(audioContext.createStereoPanner()));
+return applyFieldInitializer(options, createUi(audioContext.createStereoPanner()));
 } // stereoPanner
 
 export function panner (options) {
-let component = wrapWebaudioNode(audioContext.createPanner());
+let component = createUi(audioContext.createPanner());
 component.radius = component.angle = 0.0;
 const ui = component.ui;
 
@@ -183,20 +178,6 @@ ui.setValue("positionZ", _z.toFixed(3));
 }); // S.root
 
 return applyFieldInitializer(options, component);
-
-function toPolar (_x, _y) {
-return [
-Math.sqrt(_x*_x + _y*_y),
-Math.atan2(_y, _x)
-];
-} // toPolar
-
-function toCartesian (_r, _a) {
-return [
-_r * Math.cos(_a),
-_r * Math.sin(_a)
-];
-} // toCartesian
 } // panner
 
 export function delay(options) {
@@ -224,19 +205,19 @@ postFrequency=851.71 | c(t/3, 850, 1050);
 postQ=0.21 | s(t/2, 0.2, 0.9);
 postFilterGain=7
 `*/) {
-return applyFieldInitializer(options, wrapWebaudioNode(new Xtc(audioContext)));
+return applyFieldInitializer(options, createUi(new Xtc(audioContext)));
 } // xtc
 
 export function midSide (options = "midGain=1; sideGain=1") {
 return applyFieldInitializer(options,
-wrapWebaudioNode(new AudioWorkletNode(audioContext, "midSide", {outputChannelCount: [2]}))
+createUi(new AudioWorkletNode(audioContext, "midSide", {outputChannelCount: [2]}))
 );
 } // midSide
 
 export function stereoProcessor (options = "") {
 options = `title = Stereo Processor; ${options}`;
 return applyFieldInitializer(options,
-wrapWebaudioNode(new AudioWorkletNode(audioContext, "stereoProcessor", {outputChannelCount: [2]}))
+createUi(new AudioWorkletNode(audioContext, "stereoProcessor", {outputChannelCount: [2]}))
 );
 } // midSide
 
@@ -330,3 +311,16 @@ _function (component);
 if (component.children) component.children.forEach(c => walkComponentTree(c, _function));
 } // walkComponentTree
 
+export function toPolar (_x, _y) {
+return [
+Math.sqrt(_x*_x + _y*_y),
+Math.atan2(_y, _x)
+];
+} // toPolar
+
+export function toCartesian (_r, _a) {
+return [
+_r * Math.cos(_a),
+_r * Math.sin(_a)
+];
+} // toCartesian
