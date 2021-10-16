@@ -9,9 +9,9 @@ const ignoreList = new Set([
 "channelCountMode", "channelInterpretation",
 ]);
 
-export function createUi (component) {
+export function createUi (component, name) {
 if (isAudioNode(component)) component = wrapAudioNode(component);
-return buildUi(component);
+return buildUi(component, name);
 } // createUi 
 
 function wrapAudioNode (node, name, options = {}) {
@@ -35,11 +35,10 @@ return component;
 
 } // wrapAudioNode
 
-function buildUi (component) {
+function buildUi (component, name = component.name) {
 console.debug("buildUi: ", component);
-debugger;
 
-const ui = new Control(component, component.name);
+const ui = new Control(component, name);
 
 createFields(
 component, ui,
@@ -82,8 +81,7 @@ else parameters.push([name, p]);
 } // if
 } // for
 
-if (node instanceof AudioComponent) parameters = parameters.concat(allParameters(Reflect.getPrototypeOf(node)));
-
+//if (node instanceof AudioComponent) parameters = parameters.concat(allParameters(Reflect.getPrototypeOf(node)));
 return parameters;
 } // allParameters
 

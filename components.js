@@ -58,16 +58,20 @@ get enableAutomation () {return isAutomationEnabled();},
 set enableAutomation(value) {value? enableAutomation() : disableAutomation();},
 }; // component
 
-const ui = new Control(component, "App");
-ui.container.insertAdjacentHTML("afterBegin", '<div role="status" aria-atomic="true" aria-label="status" class="status"></div>\n');
-ui.container.classList.add("root");
+const ui = createUi (component, "root").ui;
 
+/*const ui = new Control(component, "App");
 createFields(
 component, ui,
 ["saveOnExit", "storeAll", "restoreAll", "enableAutomation", "automationInterval", "automationType"]
 ); // createFields
-
 component.ui = ui;
+*/
+
+ui.container.insertAdjacentHTML("afterBegin", '<div role="status" aria-atomic="true" aria-label="status" class="status"></div>\n');
+ui.container.classList.add("root");
+
+
 applyFieldInitializer(options, component);
 dom.buildDom(component);
 ui.container.addEventListener ("keydown", keyboardHandler);
@@ -110,7 +114,7 @@ const component = createUi(new Player(audioContext));
 component._audioElement.addEventListener("error", e => statusMessage(`cannot load media from ${e.target.src}`));
 
 component._audioElement.addEventListener("timeupdate", e => {
-if (!component._media.seeking) component.ui.nameToElement("position").value = Number(e.target.currentTime.toFixed(1))
+if (!e.target.seeking) component.ui.nameToElement("position").value = Number(e.target.currentTime.toFixed(1))
 });
 
 return applyFieldInitializer(options, component);
@@ -198,12 +202,12 @@ bypass; mix=0.25; delay=0.00007; feedback=0.85;
 preType=bandpass;
 preFrequency=803.838 | s(t/2, 800, 1000);
 preQ=0.205 | c(t/3, .2, 0.9);
-preFilterGain=0;
+preGain=0;
 preGain=1;
 postType=peaking;
 postFrequency=851.71 | c(t/3, 850, 1050);
 postQ=0.21 | s(t/2, 0.2, 0.9);
-postFilterGain=7
+postGain=7
 `*/) {
 return applyFieldInitializer(options, createUi(new Xtc(audioContext)));
 } // xtc

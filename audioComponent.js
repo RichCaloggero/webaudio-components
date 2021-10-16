@@ -52,16 +52,13 @@ this.bypass = false;
 //console.debug(`component ${name} created`);
 } // constructor
 
-property (name1, name2 = name1, node = this.audioNode) {
-const descriptor = {
+descriptor(name, node = this.audioNode) {
+return {
 enumerable: true,
-get: function () {return node[name2];},
-set: function (value) {node[name2] = value;}
+get: function () {return node[name];},
+set: function (value) {node[name] = value;}
 };
-
-return (node === this.audioNode)?
-Object.defineProperty(this, name1, descriptor) : descriptor;
-} // property
+} // descriptor
 
 get id () {
 return `${this.parent? this.parent.id + "." : ""}${name}-${this._id}`;
@@ -138,8 +135,6 @@ constructor (audio) {
 super (audio, "xtc");
 this._pre = audio.createBiquadFilter();
 this._post = audio.createBiquadFilter();
-this._preGain = audio.createGain();
-this._postGain = audio.createGain();
 this.audioNode = new AudioWorkletNode(audio, "xtc", {outputChannelCount: [2]});
 this._filterGainTypes = ["lowshelf", "highshelf", "peaking"];
 
@@ -152,6 +147,7 @@ this.input
 // we can avoid getters and setters by copying AudioParam objects directly to this object's instance
 this.delay = this.audioNode.parameters.get("delay");
 this.feedback = this.audioNode.parameters.get("feedback");
+
 this.preFrequency = this._pre.frequency;
 this.preQ = this._pre.Q;
 this.preGain = this._pre.gain;
@@ -161,8 +157,10 @@ this.postQ = this._post.Q;
 this.postGain = this._post.gain;
 
 // these must be getter/setter pairs
-this.property("preType", "type");
-this.property("postType", "type");
+Object.defineProperties(this, {
+preType: this.descriptor("type", this._pre),
+postType: this.descriptor("type", this._post),
+}); // defineProperties
 } // constructor
 } // class Xtc
 
@@ -180,17 +178,22 @@ get: function () {return this.source instanceof MediaElementAudioSourceNode;}
 media: {enumerable: true,
 get: function () {return this._hasMediaElement? this._audioElement.src : "";},
 set: function (media) {
+if (media) {
+this.source?.disconnect();
+this.source = null;
 if (media instanceof AudioBuffer) {
 this.source = audio.createBufferSource(media);
 
 } else {
 this.source = audio.createMediaElementSource(this._audioElement);
 this._audioElement.setAttribute("crossorigin", "anonymous");
+this._audioElement.src = media;
 } // if
 
 this.source.connect(this.output);
+} // if
 }
-}, // set media
+}, // media
 
 play: {enumerable: true,
 get: function () {return this._hasMediaElement? !this._audioElement.paused : false;},

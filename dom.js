@@ -95,7 +95,7 @@ if (defaultValue) setValue(element, defaultValue, "fire change event");
 if (automator) addAutomation(element, automator, compile(automator));
 
 } else {
-throw new Error(`field ${name} not found in ${container.className}`);
+throw new Error(`field ${name} not found in ${component.name}`);
 } // if
 } // initialize
 } // showFields

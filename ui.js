@@ -69,7 +69,7 @@ receiver = this.receiver
 const field = createField(receiver, name, dataType, defaultValue,
 `<label>
 <span class="text">${label}</span>
-<input type="text" value="${defaultValue}" data-name="${name}">
+<input class="control" type="text" value="${defaultValue}" data-name="${name}">
 </label>
 `);
 this.createSignal(name, field, defaultValue);
@@ -102,7 +102,7 @@ defaultValue = null,
 receiver = this.receiver
 }) {
 const field = createField(receiver, name, dataType, defaultValue,
-`<button data-name="${name}">${label}</button>`
+`<button class="control" data-name="${name}">${label}</button>`
 ); // createField
 this.createSignal(name, field, jSig.clickSignal);
 return field;
@@ -117,7 +117,7 @@ receiver = this.receiver
 }) {
 const field = createField(
 receiver, name, dataType, defaultValue,
-`<button data-name="${name}" aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
+`<button class="control" data-name="${name}" aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
 );
 field.dataset.value = (defaultValue);
 this.createSignal(name, field, defaultValue);
@@ -172,7 +172,7 @@ else receiver[name] = signal();
 } // connectSignal
 
 nameToField (name) {return this.fields.querySelector(`.field[data-name=${name}]`);}
-nameToElement (name) {return dom.fieldToElement(this.nameToField(name));}
+nameToElement (name) {return this.fields.querySelector(`.control[data-name=${name}]`);}
 valueOf (name) {return this.signals[name]();}
 sample (name) {return S.sample(this.signals[name]);}
 setValue (name, value, _update) {
