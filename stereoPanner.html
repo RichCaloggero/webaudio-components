@@ -14,16 +14,21 @@ import * as audio from "./components.js";
 const commonOptions = "bypass, silentBypass, mix";
 
 window.app = audio.app("enableAutomation; automationInterval=0.1",
-audio.series(`hide = ${commonOptions}`,
-window.player = audio.player("show = media, play, position"),
-audio.parallel(
-window.panner = audio.stereoPanner("show=*"),
-
 audio.series(
-//window.delay = audio.delay("delay=0"),
-audio.reverseStereo(""),
-audio.stereoPanner("show=*"),
-audio.filter("show = frequency, Q; type=lowpass")
+window.player = audio.player(),
+audio.parallel("title = crazy panner",
+
+audio.series("show = bypass; silentBypass = true",
+audio.stereoPanner("hide = bypass, silentBypass, mix; pan = 0 | cos(t/2)"),
+audio.gain("hide = mix, bypass, silentBypass")
+), // series
+
+audio.series("show = bypass; silentBypass = true",
+audio.delay("delay=0; hide = silentBypass, mix"),
+audio.reverseStereo("hide=*"),
+audio.stereoPanner("pan = 0 | -cos(t/2); hide = bypass, silentBypass, mix"),
+audio.filter("type=lowpass; hide = mix, type, detune, gain"),
+audio.gain("hide = bypass, silentBypass, mix")
 ) // series
 
 ), // parallel

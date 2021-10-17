@@ -41,10 +41,12 @@ function buildUi (component, name = component.name) {
 
 const ui = new Control(component, name);
 
-ui.allFieldNames = createFields(
+ui.allFieldNames = new Set(
+createFields(
 component, ui,
 [...AudioComponent.sharedParameterNames, ...filterIgnored(allParameterNames(component))]
-); // createFields
+) // createFields
+); // new Set
 
 component.ui = ui;
 return component;

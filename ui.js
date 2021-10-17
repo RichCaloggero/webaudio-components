@@ -34,7 +34,7 @@ throw new Error("need a receiver");
 this.receiver = receiver;
 this.label = label;
 this.signals = Object.create(null);
-this.allFieldNames = [];
+this.allFieldNames = new Set();
 this.container = document.createElement("div");
 this.fields = document.createElement("div");
 this.fields.className = "fields";

@@ -31,34 +31,34 @@ container.querySelector(".component-title").setAttribute("aria-level", depth);
 
 export function showFields (component) {
 //console.debug("showFields: ", component.name, component);
+if (component.ui.allFieldNames.size === 0) return;
 const ui = component.ui;
-if (ui.allFieldNames.length === 0) return;
-const initializers = ui._initializers;
-const initialized = new Set();
-const hide = ui._hide;
-const show = ui._show;
 const container = ui.fields;
+const initialized = new Set();
 
-//console.debug("showFields: ", component.name, hide, show, initializers);
-initializers.forEach(initialize);
+ui._initializers.forEach(initialize);
 
-hide.forEach(name => component.ui.nameToField(name).hidden = true);
-//if (component.name === "series") debugger;
+console.debug("showFields: ", component.name, ui._allFieldNames, ui._hide, ui._hideOnBypass);
 
-if (component._type === "container" && hide.size === ui.allFieldNames.length) {
+/*if (component._type === "container" && ui._hide.size === ui.allFieldNames.size) {
+const level = Number(ui.container.getAttribute("aria-level"));
+if (level) ui.container.setAttribute("aria-level", level-1);
 ui.container.querySelector(".component-title").hidden = true;
 ui.container.setAttribute("role", "presentation");
 } // if
+*/
 
-if (component.ui.nameToField("bypass")?.hidden === false) handleHideOnBypass(component, ui.allFieldNames.filter(name => name !== "bypass"));
+const bypass = ui.nameToField("bypass");
+//if (bypass && !bypass.hidden) handleHideOnBypass(component);
 return;
 
-function handleHideOnBypass (component, hideOnBypass) {
+function handleHideOnBypass (component) {
 const bypassSignal = component.ui.signals.bypass;
+
 S.root(() => {
 S(() => {
 const hide = bypassSignal();
-hideOnBypass.forEach(name => ui.nameToField(name).hidden = hide);
+component.ui._hideOnBypass.forEach(name => ui.nameToField(name).hidden = hide);
 });
 }); // S.root
 } // handleHideOnBypass

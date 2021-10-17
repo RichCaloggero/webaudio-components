@@ -360,7 +360,7 @@ set outputGain (value) {this._gain.gain.value = value;}
 
 export class ReverseStereo extends AudioComponent {
 constructor (audio) {
-super (audio);
+super (audio, "reverse");
 const s = audio.createChannelSplitter(2);
 const m = audio.createChannelMerger(2);
 this.input.connect(s);

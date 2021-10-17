@@ -6,7 +6,7 @@ import {parseFieldDescriptor} from "./parser.js";
 import {getAutomation,  enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval} from "./automation.js";
 import {keyboardHandler} from "./keyboardHandler.js";
 import * as dom from "./dom.js";
-import {union} from "./setops.js";
+import {difference} from "./setops.js";
 import {publish, subscribe} from "./observer.js";
 await audioContext.audioWorklet.addModule("./dattorroReverb.worklet.js");
 await audioContext.audioWorklet.addModule("./midSide.worklet.js");
@@ -238,7 +238,7 @@ return applyFieldInitializer(options, createUi(new Parallel(audioContext, childr
 
 /// helpers
 
-function applyFieldInitializer (fd = null, component) {
+function applyFieldInitializer (fd = "", component) {
 //console.debug("applyFieldSescriptors: ", component.name, component);
 //if (!fd) return component;
 
@@ -268,15 +268,16 @@ const descriptors = (typeof(fd) === "string" || (fd instanceof String)? parseFie
 .forEach(descriptor => initializers.add(descriptor));
 //console.debug("applyFieldInitializers: ", component.name, hide, show, initializers);
 
-
 // hide all fields if hide contains exactly one "*"
 if (hide.size === 1 && hide.has("*")) {
 hide.delete("*");
-component.ui.allFieldNames.forEach(name => hide.add(name));
+ui._hide = ui.allFieldNames;
+} else {
+ui._hide = difference(hide, show);
 } // if
 
-ui._show = union(show, alwaysShow);
-ui._hide = hide;
+ui._hide.forEach(name => ui.nameToField(name).hidden = true);
+ui._hideOnBypass = difference(difference(ui.allFieldNames, hide), "bypass");
 ui._initializers = initializers;
 return component;
 
