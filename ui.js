@@ -1,3 +1,5 @@
+const probe = false;
+
 import S from "./S.module.js";
 import * as jSig from "./jSig.js";
 import * as dom from "./dom.js";
@@ -164,10 +166,13 @@ return signal;
 
 connectSignal (name, receiver = this.receiver) {
 const signal = this.signals[name];
+console.debug("connectSignal: ", name, signal.name || signal, receiver.name || receiver);
 S.root(() => {
 S(() => {
-if (isAudioParam(receiver[name])) receiver[name].value = signal();
-else receiver[name] = signal();
+const value = signal();
+if (probe) console.debug("ui.probe: ", name, value);
+if (isAudioParam(receiver[name])) receiver[name].value = value;
+else receiver[name] = value;
 });
 }); // S.root
 } // connectSignal
@@ -178,8 +183,7 @@ valueOf (name) {return this.signals[name]();}
 sample (name) {return S.sample(this.signals[name]);}
 setValue (name, value, _update) {
 const element = this.nameToElement(name);
-element.value = value;
-if (_update) update(element);
+setValue(element, value, _update);
 } // setValue
 
 populateList (name, values) {
@@ -338,17 +342,24 @@ export function getValue (element) {
 return element instanceof HTMLButtonElement? getState(element) : element.value;
 } // getValue
 
-export function setValue (element, value, fireChangeEvent) {
-if (element instanceof HTMLButtonElement) {
-setState(element, value);
+export function setValue (element, value, _update) {
+// sending clicks will always toggle, so only send a click if new value is different than old one
+if (element instanceof HTMLButtonElement && getState(element) !== Boolean(value)) {
+if (_update) update(element);
+else setState(element, Boolean(value));
+
+
 } else {
 element.value = value;
+if (_update) update(element);
 } // if
 
-if (fireChangeEvent) update(element);
+return value;
 } // setValue
 
 export function update (element) {
+if (element instanceof HTMLButtonElement) element.click();
+else
 element.dispatchEvent(new CustomEvent("change", {bubbles: true}));
 } // update
 

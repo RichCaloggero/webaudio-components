@@ -1,6 +1,6 @@
 import S from "./S.module.js";
 import {AudioComponent} from "./audioComponent.js";
-import {compile, setValue, getState} from "./ui.js";
+import {compile, setValue, getValue, getState} from "./ui.js";
 import {addAutomation, removeAutomation, compileFunction} from "./automation.js";
 import {union, intersection, symmetricDifference, difference} from "./setops.js";
 
@@ -36,9 +36,9 @@ const ui = component.ui;
 const container = ui.fields;
 const initialized = new Set();
 
-ui._initializers.forEach(initialize);
+ui._initializers.forEach(initializer => initialize(ui, initializer));
 
-console.debug("showFields: ", component.name, ui._allFieldNames, ui._hide, ui._hideOnBypass);
+//console.debug("showFields: ", component.name, ui._allFieldNames, ui._hide, ui._hideOnBypass);
 
 /*if (component._type === "container" && ui._hide.size === ui.allFieldNames.size) {
 const level = Number(ui.container.getAttribute("aria-level"));
@@ -63,17 +63,15 @@ component.ui._hideOnBypass.forEach(name => ui.nameToField(name).hidden = hide);
 }); // S.root
 } // handleHideOnBypass
 
-function initialize (d) {
-const {name, defaultValue, automator} = d;
-//console.debug("initialize: ", name);
-const element = component.ui.nameToElement(name);
+function initialize (ui, initializer) {
+const {name, defaultValue, automator} = initializer;
+const element = ui.nameToElement(name);
 
 
 if (element) {
-initialized.add(name);
 if (element.dataset.datatype === "action") return;
 
-if (defaultValue) setValue(element, defaultValue, "fire change event");
+if (element.dataset.dataType === "boolean" || defaultValue) ui.setValue(name, defaultValue, "fire event");
 if (automator) addAutomation(element, automator, compile(automator));
 
 } else {
@@ -102,7 +100,7 @@ setValue(element, value, "fireChangeEvent");
 export function getInteractiveElement (name, container) {return container.querySelector(`[data-name=${name}]`);}
 export function getAllFields (root = document) {return [...root.querySelectorAll(".fields > .field")];}
 export function getAllInteractiveElements (root) {return [...root.querySelectorAll(".fields .field [data-name]")];}
-export function fieldToElement (field) {return field.querySelector("[data-name]");}
+export function fieldToElement (field) {return field.querySelector(".control");}
 export function elementToField (element) {return element.closest(".field");}
 
 export function keyGen (component, name) {return `${component._id}_${name}`;}

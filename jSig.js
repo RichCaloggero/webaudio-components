@@ -1,3 +1,6 @@
+let probe = false;
+const _probe = window.probe = new Map();
+
 import S from "./S.module.js";
 
 
@@ -10,6 +13,9 @@ signal(e);
 });
 } // for
 
+S.root(() => {
+if (probe) S(() => saveEvents(signal()));
+}); // S.root
 return signal;
 } // createEventSignal
 
@@ -31,7 +37,7 @@ return element instanceof HTMLButtonElement && element.hasAttribute("aria-presse
 }); // S.root
 
 function toggleState (element) {setState(element, !getState(element));}
-function setState (element, state) {element.setAttribute("aria-pressed", state? "true" : "false");}
+function setState (element, state) {element.setAttribute("aria-pressed", state? "true" : "false"); return state;}
 function getState (element) {return element.getAttribute("aria-pressed") === "true";}
 } // valueSignal
 
@@ -58,4 +64,10 @@ return S.on(values, () => Boolean(values()));
 }); // S.root
 } // createBooleanSignal
 
+
+function saveEvents (e) {
+const type = e.type;
+const list = _probe.has(type)? [..._probe.get(type), e] : [e];
+_probe.set(type, list);
+} // saveEvents
 

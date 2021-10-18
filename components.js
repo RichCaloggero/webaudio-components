@@ -77,15 +77,16 @@ applyFieldInitializer(options, component);
 dom.buildDom(component);
 ui.container.addEventListener ("keydown", keyboardHandler);
 
-document.addEventListener("visibilitychange", e => {
+/*document.addEventListener("visibilitychange", e => {
 if (component.saveOnExit && e.target.visibilityState === "hidden") {
 storeAll();
 statusMessage("State saved.");
 } // if
 }); // visibilitychanged
+*/
 
 //console.debug("app: updating all ...");
-dom.getAllInteractiveElements(ui.container).forEach(element => update(element));
+//dom.getAllInteractiveElements(ui.container).forEach(element => update(element));
 
 setTimeout(() => {
 walkComponentTree(component, dom.showFields);

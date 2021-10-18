@@ -18,12 +18,12 @@ audio.series(
 window.player = audio.player(),
 audio.parallel("title = crazy panner",
 
-audio.series("show = bypass; silentBypass = true",
+window.s1 = audio.series("title = unfiltered; silentBypass = true; show = bypass, silentBypass",
 audio.stereoPanner("hide = bypass, silentBypass, mix; pan = 0 | cos(t/2)"),
 audio.gain("hide = mix, bypass, silentBypass")
 ), // series
 
-audio.series("show = bypass; silentBypass = true",
+window.s2 = audio.series("title = filtered; silentBypass = true; show = bypass",
 audio.delay("delay=0; hide = silentBypass, mix"),
 audio.reverseStereo("hide=*"),
 audio.stereoPanner("pan = 0 | -cos(t/2); hide = bypass, silentBypass, mix"),

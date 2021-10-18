@@ -176,11 +176,13 @@ mix: {}
 
 this.input = null;
 this._audioElement = document.createElement("audio");
+this._audioElement.setAttribute("crossorigin", "anonymous");
 
 Object.defineProperties(this, {
 _hasMediaElement : {enumerable: true,
 get: function () {return this.source instanceof MediaElementAudioSourceNode;}
 }, // _hasMediaElement
+
 
 media: {enumerable: true,
 get: function () {return this._hasMediaElement? this._audioElement.src : "";},
@@ -188,23 +190,23 @@ set: function (media) {
 if (media) {
 this.source?.disconnect();
 this.source = null;
+
 if (media instanceof AudioBuffer) {
 this.source = audio.createBufferSource(media);
 
 } else {
 this.source = audio.createMediaElementSource(this._audioElement);
-this._audioElement.setAttribute("crossorigin", "anonymous");
 this._audioElement.src = media;
 } // if
 
 this.source.connect(this.output);
 } // if
-}
+} // set
 }, // media
 
 play: {enumerable: true,
-get: function () {return this._hasMediaElement? !this._audioElement.paused : false;},
-set: function (value) {if (this._hasMediaElement) value? this._play() : this._pause();}
+get: function () {return this._hasMediaElement && this.media && !this._audioElement.ended && !this._audioElement.paused;},
+set: function (value) {if (this._hasMediaElement && !this._audioElement.ended) value? this._play() : this._pause();}
 }, // play
 
 position: {
