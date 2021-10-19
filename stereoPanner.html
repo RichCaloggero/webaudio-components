@@ -24,10 +24,14 @@ audio.gain("hide = mix, bypass, silentBypass")
 ), // series
 
 window.s2 = audio.series("title = filtered; silentBypass = true; show = bypass",
-audio.delay("delay=0; hide = silentBypass, mix"),
+audio.delay("delay=0; | r(0, 0.00033); hide = silentBypass, mix"),
 audio.reverseStereo("hide=*"),
 audio.stereoPanner("pan = 0 | -cos(t/2); hide = bypass, silentBypass, mix"),
-audio.filter("type=lowpass; hide = mix, type, detune, gain"),
+audio.filter(`
+type=lowpass;
+frequency = 350 | c(t/2, 150, 400);
+Q=1 | c(t, 2, 1); hide = mix, type, detune, gain
+`),
 audio.gain("hide = bypass, silentBypass, mix")
 ) // series
 

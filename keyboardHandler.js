@@ -1,6 +1,6 @@
 import {eventToKey} from "./key.js";
 import {statusMessage, displayModal, createModal, update, compile} from "./ui.js";
-import {addAutomation, getAutomation, removeAutomation} from "./automation.js";
+import {addAutomation, getAutomation, setAutomation, removeAutomation} from "./automation.js";
 import {separateWords} from "./parser.js";
 
 const savedValues = new Map();
@@ -24,7 +24,8 @@ const commands = {
  "control shift space": {command: swap, type: "numeric"},
 
 "enter": {command: defineAutomation, type: "numeric"},
-"control enter": {command: defineStepSize, type: "numeric"},
+"control enter": {command: toggleAutomation, type: "numeric"},
+"control shift enter": {command: defineStepSize, type: "numeric"},
 }; // commands
 
 const key = eventToKey(e).join(" ");
@@ -65,6 +66,15 @@ title: "Keyboard help",
 body: `<table><tr><th>key</th><th>command</th></tr>${message}</table>`
 }));
 } // help
+
+function toggleAutomation (element) {
+const automationEntry = getAutomation(element);
+if (automationEntry) {
+automationEntry.enabled = !automationEntry.enabled;
+setAutomation(element, automationEntry);
+statusMessage(`automation ${automationEntry.enabled? "enabled" : "disabled"}.`);
+} // if
+} // toggleAutomation
 
 function defineAutomation (element) {
 const text = prompt("automator: ", (getAutomation(element) || {}).text).trim();

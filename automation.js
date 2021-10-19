@@ -24,11 +24,10 @@ _tick();
 } // if _automationEnabled
 }; // onmessage
 
-export function addAutomation (element, text, _function) {
+export function addAutomation (element, text, _function, enabled = true) {
 if (_function) {
 automationQueue.set(element, ({
-element: element,
-text: text,
+element, text, enabled,
 automator: _function
 }));
 } // if
@@ -36,13 +35,14 @@ automator: _function
 
 
 export function getAutomation (element) {return automationQueue.get(element);}
+export function setAutomation (element, value) {return automationQueue.set(element, value);}
 
 
 export function removeAutomation (element) {automationQueue.delete(element);}
 
 
 function _tick () {
-automationQueue.forEach(e => setValue(e.element, e.automator(audioContext.currentTime), "change"));
+automationQueue.forEach(e => e.enabled && setValue(e.element, e.automator(audioContext.currentTime), "change"));
 } // _tick
 
 

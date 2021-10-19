@@ -6,7 +6,7 @@ import * as dom from "./dom.js";
 import {AudioComponent} from "./audioComponent.js";
 import {isNumber, isString, isFunction, isAudioParam, isAudioParamMap} from "./parameters.js";
 import {removeBlanks, separateWords} from "./parser.js";
-import {compileFunction} from "./automation.js";
+import {getAutomationInterval, compileFunction} from "./automation.js";
 //import {storeValue} from "./save-restore.js";
 const statusMessageQueue = [];
 
@@ -166,13 +166,17 @@ return signal;
 
 connectSignal (name, receiver = this.receiver) {
 const signal = this.signals[name];
-console.debug("connectSignal: ", name, signal.name || signal, receiver.name || receiver);
+//console.debug("connectSignal: ", name, signal.name || signal, receiver.name || receiver);
 S.root(() => {
 S(() => {
 const value = signal();
 if (probe) console.debug("ui.probe: ", name, value);
-if (isAudioParam(receiver[name])) receiver[name].value = value;
-else receiver[name] = value;
+if (isAudioParam(receiver[name])) {
+const interval = 0.9 * getAutomationInterval();
+receiver[name].linearRampToValueAtTime(value, interval);
+} else {
+receiver[name] = value;
+} // if
 });
 }); // S.root
 } // connectSignal
