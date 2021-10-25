@@ -116,8 +116,8 @@ let r = _r;
 const mono = (l + r)/2 * center;
 const stereo = (l - r) * side;
 
-l = (mono + (stereo*left1 - stereo*right )* width) / max(width,1);
-r = (mono + (-stereo*right1 + stereo*left )* width) / max(width,1);
+l = (mono + (-stereo*right1 + stereo*left )* width) / max(width,1);
+r = (mono + (stereo*left1 - stereo*right )* width) / max(width,1);
 
 return [l, r];
 } // stereoEnhance

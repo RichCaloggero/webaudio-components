@@ -1,6 +1,6 @@
 import S from "./S.module.js";
 import {Control, update, setValue, createFields, statusMessage} from "./ui.js";
-import {audioContext, AudioComponent, Delay, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
+import {audioContext, AudioComponent, DelayNode, Destination, Xtc, ReverseStereo, Player, Series, Parallel, componentId} from "./audioComponent.js";
 import {createUi, reorder} from "./parameters.js";
 import {parseFieldDescriptor} from "./parser.js";
 import {getAutomation,  enableAutomation, disableAutomation, isAutomationEnabled, getAutomationInterval, setAutomationInterval} from "./automation.js";
@@ -11,6 +11,7 @@ import {publish, subscribe} from "./observer.js";
 await audioContext.audioWorklet.addModule("./dattorroReverb.worklet.js");
 await audioContext.audioWorklet.addModule("./midSide.worklet.js");
 await audioContext.audioWorklet.addModule("./stereoProcessor.worklet.js");
+await audioContext.audioWorklet.addModule("./delay.worklet.js");
 
 
 /// app (top level UI)
@@ -181,16 +182,12 @@ return applyFieldInitializer(options, component);
 } // panner
 
 export function delay(options) {
-const component = new Delay(audioContext);
-const ui = new Control(component, "delay");
-createFields(
-component, ui,
-[...AudioComponent.sharedParameterNames, "delay", "feedBack"]
-); // createFields
-
-component.ui = ui;
-return applyFieldInitializer(options, component);
+return applyFieldInitializer(options, createUi(new AudioWorkletNode(audioContext, "delay", {outputChannelCount: [2]}), "delay"));
 } // delay
+
+export function delayNode (options) {
+return applyFieldInitializer(options, createUi(new DelayNode(audioContext)));
+} // delayNode
 
 
 export function xtc (options /*= `
@@ -210,16 +207,15 @@ return applyFieldInitializer(options, createUi(new Xtc(audioContext)));
 
 export function midSide (options = "midGain=1; sideGain=1") {
 return applyFieldInitializer(options,
-createUi(new AudioWorkletNode(audioContext, "midSide", {outputChannelCount: [2]}))
+createUi(new AudioWorkletNode(audioContext, "midSide", {outputChannelCount: [2]}), "midSide")
 );
 } // midSide
 
-export function stereoProcessor (options = "") {
-options = `title = Stereo Processor; ${options}`;
+export function stereoProcessor (options) {
 return applyFieldInitializer(options,
-createUi(new AudioWorkletNode(audioContext, "stereoProcessor", {outputChannelCount: [2]}))
+createUi(new AudioWorkletNode(audioContext, "stereoProcessor", {outputChannelCount: [2]}), "stereoProcessor")
 );
-} // midSide
+} // stereoProcessor
 
 /// containers
 

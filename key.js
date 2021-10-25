@@ -39,6 +39,5 @@ return new Map(
 
 /// tests
 
-console.assert(new Key({ctrlKey:true, shiftKey:true, key: " "}).toString() === new Key({ctrlKey:true,  key: " ", shiftKey:true}).toString());
-console.assert(new Key({altKey: true, shiftKey:true, key: " "}).toString() === new Key({ctrlKey:true,  key: " ", shiftKey:true}).toString());
+console.assert(new Key({ctrlKey:true, shiftKey:true, altKey: true, key: " "}).toString() === new Key({altKey: true, key: " ", ctrlKey:true, shiftKey:true}).toString());
 
