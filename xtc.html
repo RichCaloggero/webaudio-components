@@ -11,47 +11,39 @@
 <script type="module">
 import {AudioComponent, audioContext} from "./audioComponent.js";
 import * as audio from "./components.js";
-
 const commonOptions = "bypass, silentBypass, mix";
 
 window.app = audio.app("enableAutomation; automationInterval=0.1",
-audio.series("hide=mix, bypass, silentBypass",
-window.player = audio.player(`
-show=media, play, position;
-media=media/Grateful Dead - (4K AI REMASTER) - Ticket To New Year's - Oakland Coliseum 1987-12-31-2i9DlMgXFyg.opus
-`), // player
-audio.series("bypass=true; mix=0.25; title=XTC Block",
-window.xtc = audio.xtc(`
-mix=1; delay=0.00007; feedback=0.85;
-postType=peaking; postFrequency=42; postQ=0.85; postFilterGain=35;
-hide=mix, bypass, silentBypass
-`),
-audio.filter(`
-type=highshelf; frequency=4000; gain=30;
-hide=bypass, silentBypass, mix
-`),
+audio.series(
+window.player = audio.player("media = media/fire.flac; position=200"),
+
+window.panner = audio.panner("bypass=true; panningModel = HRTF; distanceModel = linear; maxDistance = 30; refDistance = 20;"),
+audio.stereoProcessor("bypass=true"),
+
+audio.parallel("title = crazy panner",
+
+window.s1 = audio.series("title = unfiltered; bypass=true; show = bypass, silentBypass",
+audio.stereoPanner("hide = bypass, silentBypass, mix; pan = 0 | cos(t/2)"),
+audio.gain("hide = mix, bypass, silentBypass")
 ), // series
+
+window.s2 = audio.series("title = filtered; silentBypass = true; show = bypass",
+audio.filter(`bypass=true;
+type=lowpass;
+frequency = 350 ;
+Q=1;
+hide = silentBypass, mix, detune, gain
+`),
+//audio.reverb("hide=silentBypass"),
+audio.delay("bypass=true; feedback=0.85; delay=0.00007; gain=-1.0; reverse=1.0; hide = silentBypass, mix"),
+audio.gain("gain=0.7; hide = bypass, silentBypass, mix")
+) // series
+
+), // parallel
 audio.destination()
 ) // series
 ); // app
 document.body.appendChild(app.ui.container);
-
-/*function createXtc () {
-return audio.series("title=XTC block; bypass=true; hide=silentBypass; mix=1",
-createBand("title=prefilter band 1; type=lowshelf; frequency=500; Q=0.26; gain=-10"),
-createBand("title=prefilter band 2; type=highshelf; frequency=6000; Q=0.26; gain=-10"),
-audio.xtc("delay=0.00009; feedback=0.85; reverseStereo=1; gain=-1"),
-createBand("title=post filter; type=peaking; frequency=1000; Q=.66; gain=1"),
-); // series
-} // createXtc
-
-function createBand (options) {
-return audio.series(`hide=silentBypass, mix`,
-audio.filter(`hide=silentBypass, mix, detune; ${options}`),
-audio.gain(`hide=${commonOptions}; gain=1`)
-); // series
-} // createBand
-*/
 
 </script>
 

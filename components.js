@@ -153,17 +153,22 @@ return applyFieldInitializer(options, createUi(audioContext.createStereoPanner()
 } // stereoPanner
 
 export function panner (options) {
-let component = createUi(audioContext.createPanner());
+const component = createUi(audioContext.createPanner());
 component.radius = component.angle = 0.0;
 const ui = component.ui;
 
 createFields(component, ui, ["radius", "angle"], "positionZ");
 
-S.root(() => {
-const polar = S(() => toPolar(ui.valueOf("positionX"), ui.valueOf("positionZ")));
-const cartesian = S(() => toCartesian(ui.valueOf("radius"), ui.valueOf("angle")));
+const radius = ui.signals.radius;
+const angle = ui.signals.angle;
+const x = ui.signals.positionX;
+const z = ui.signals.positionZ;
 
-S(() => [component.positionX, component.positionZ] = cartesian());
+S.root(() => {	
+const polar = S(() => toPolar(x(), z()));
+const cartesian = S(() => toCartesian(radius(), angle()));
+
+S(() => [component.positionX.value, component.positionZ.value] = cartesian());
 
 S(() => {
 const [_r, _a] = polar();
@@ -172,10 +177,21 @@ ui.setValue("angle", _a.toFixed(3));
 });
 
 S(() => {
-const [_x, _z] = cartesian()
+const [_x, _z] = cartesian();
 ui.setValue("positionX", _x.toFixed(3));
 ui.setValue("positionZ", _z.toFixed(3));
 });
+
+// probe
+/*S(() => console.debug(`
+radius, angle: ${[radius(), angle()]};
+cartesian: ${cartesian()};
+x, z: ${[x(), z()]}
+polar: ${polar()};
+panner: ${[component.audioNode.positionX.value, component.audioNode.positionZ.value]};
+`));
+*/
+
 }); // S.root
 
 return applyFieldInitializer(options, component);

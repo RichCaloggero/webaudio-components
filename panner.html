@@ -14,11 +14,9 @@ import * as audio from "./components.js";
 const commonOptions = "bypass, silentBypass, mix";
 
 window.app = audio.app("enableAutomation; automationInterval=0.1",
-audio.series(`hide = ${commonOptions}`,
-window.player = audio.player(`
-show=media, play, position;
-`),
-window.panner = audio.panner("show=*"),
+audio.series(
+window.player = audio.player(),
+window.panner = audio.panner(),
 audio.destination()
 ) // series
 ); // app

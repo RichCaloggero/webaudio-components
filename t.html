@@ -7,28 +7,38 @@
 <body>
 <h1>Testing S</h1>
 <button id="clear" accesskey="c">clear</button>
-<div aria-label="status" id="status" role="log"></div>
 
-<button id="test">click me</button>
-<label>number: <input type="number" id="number" step="0.1"></label>
+<label>farenheight: <input type="number" id="f" step="0.1"></label>
+<label>centigrade: <input type="number" id="c" step="0.1"></label>
+<hr><div id="log" role="log"></div>
 
 <script type="module">
 import * as jSig from "./jSig.js";
 import S from "./S.module.js";
 
 S.root(() => {
-const num = jSig.numericSignal($("input"));
+const f = jSig.numericSignal($("#f"), 0);
+const c = jSig.numericSignal($("#c"), 0);
 const clear = jSig.clickSignal($("#clear"));
-const test = jSig.booleanSignal($("#test"));
 
-S(() => {clear(); $("#status").innerHTML = "";});
+const f0 = S(() => 9/5 * c() + 32);
+const c0 = S(() => (5/9) * (f() - 32));
 
-S(() => message(`test: boolean ${test()}`));
-S(() => message(`number ${num()}`));
-});
+S(() => $("#f").value = f0());
+S(() => $("#c").value = c0());
+
+probe("f", f);
+probe("c", c);
+probe("f0", f0);
+probe("c0", c0);
+
+S(() => {clear(); $("#log").innerHTML = "";});
+}); // root
+
+function probe (name, signal) {S(() => message(`${name}: ${signal()}`));}
 
 function message(text) {
-document.querySelector("#status").insertAdjacentHTML("beforeEnd", `<p>${text}</p>`);
+$("#log").insertAdjacentHTML("beforeEnd", `<p>${text}</p>`);
 } // message
 
 function $ (s, c = document) {return c.querySelector(s);}

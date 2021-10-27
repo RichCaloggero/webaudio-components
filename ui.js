@@ -4,9 +4,9 @@ import S from "./S.module.js";
 import * as jSig from "./jSig.js";
 import * as dom from "./dom.js";
 import {AudioComponent} from "./audioComponent.js";
-import {isNumber, isString, isFunction, isAudioParam, isAudioParamMap} from "./parameters.js";
+import {not, isNumber, isString, isFunction, isAudioParam, isAudioParamMap} from "./parameters.js";
 import {removeBlanks, separateWords} from "./parser.js";
-import {getAutomationInterval, compileFunction} from "./automation.js";
+import {isAutomationEnabled, getAutomationInterval, compileFunction} from "./automation.js";
 //import {storeValue} from "./save-restore.js";
 const statusMessageQueue = [];
 
@@ -159,6 +159,8 @@ return field;
 createSignal (name, field, defaultValue, receiver = this.receiver) {
 const creator = defaultValue instanceof Function?
 defaultValue : signalCreator(typeof(defaultValue));
+if (!(creator instanceof Function)) throw new Error("third argument must be a signal creation function from jSig, or the initial default value for a signal");
+
 const signal = this.signals[name] = creator(dom.fieldToElement(field), defaultValue);
 this.connectSignal(name, receiver);
 return signal;
@@ -172,8 +174,12 @@ S(() => {
 const value = signal();
 if (probe) console.debug("ui.probe: ", name, value);
 if (isAudioParam(receiver[name])) {
-const interval = 0.9 * getAutomationInterval();
-receiver[name].linearRampToValueAtTime(value, interval);
+if (isAutomationEnabled()) {
+receiver[name].exponentialRampToValueAtTime(value, getAutomationInterval());
+} else {
+receiver[name].value = value;
+} // if
+
 } else {
 receiver[name] = value;
 } // if
