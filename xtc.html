@@ -15,9 +15,9 @@ const commonOptions = "bypass, silentBypass, mix";
 
 window.app = audio.app("enableAutomation; automationInterval=0.1",
 audio.series(
-window.player = audio.player("media = media/fire.flac; position=200"),
+window.player = audio.player("media = media/profit.flac; position=200"),
 
-window.panner = audio.panner("bypass=true; panningModel = HRTF; distanceModel = linear; maxDistance = 30; refDistance = 20;"),
+window.panner = audio.panner("bypass=true; radius=5; angle = 0 | t/2; panningModel = HRTF; orientationX=0; distanceModel = linear; maxDistance = 30; refDistance = 20;"),
 audio.stereoProcessor("bypass=true"),
 
 audio.parallel("title = crazy panner",
@@ -35,7 +35,7 @@ Q=1;
 hide = silentBypass, mix, detune, gain
 `),
 //audio.reverb("hide=silentBypass"),
-audio.delay("bypass=true; feedback=0.85; delay=0.00007; gain=-1.0; reverse=1.0; hide = silentBypass, mix"),
+audio.delay("delay = 0.00007 | s(t, 0.000025, 0.00015); feedback=0.80; gain=-1.0; reverse=1.0; hide = silentBypass, mix"),
 audio.gain("gain=0.7; hide = bypass, silentBypass, mix")
 ) // series
 

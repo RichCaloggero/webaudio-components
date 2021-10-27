@@ -39,7 +39,7 @@ constructor (options) {
 super (options);
 this.initializeDelayBuffer();
 this.blockCount = 0;
-console.debug(`xtc.worklet ready.`);
+console.debug(`delay.worklet ready.`);
 } // constructor
 
 process (inputs, outputs, parameters) {
@@ -62,12 +62,12 @@ if (channelCount !== 2) return true;
 this.blockCount += 1;
 if (delay === 0 && this.delayBuffer[0] !== null) {
 this.initializeDelayBuffer();
-console.debug("deallocated buffers");
+//console.debug("deallocated buffers");
 
 } else if (delay > 0 && delay !== this.delay) {
 //console.debug(`dx: ${dx}`);
 this.delay = this.allocate(delay);
-console.debug(`allocated ${this.delay}, lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
+//console.debug(`allocated ${this.delay}, lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
 } // if
 
 //console.debug(`frame ${this.blockCount++}, delay ${delay}, ${this.delay}, ${delayLength}`);
@@ -165,12 +165,12 @@ for (let i=0; i<length; i++) buffer[channel][i] = this.readBuffer(channel);
 this.readIndex[channel] = 0;
 this.writeIndex[channel] = length;
 this._bufferLength[channel] = length;
-console.debug(`- copy done, bufferLength is ${this.bufferLength(channel)}`);
+//console.debug(`- copy done, bufferLength is ${this.bufferLength(channel)}`);
 
 } else {
 this.readIndex[channel] = this.writeIndex[channel] = 0;
 this._bufferLength[channel] = 0;
-console.debug("- no copy...");
+//console.debug("- no copy...");
 } // if
 
 this.delayBuffer[channel] = buffer;

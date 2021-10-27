@@ -7,7 +7,7 @@ import {AudioComponent} from "./audioComponent.js";
 import {not, isNumber, isString, isFunction, isAudioParam, isAudioParamMap} from "./parameters.js";
 import {removeBlanks, separateWords} from "./parser.js";
 import {isAutomationEnabled, getAutomationInterval, compileFunction} from "./automation.js";
-//import {storeValue} from "./save-restore.js";
+import {audioContext} from "./audioComponent.js";
 const statusMessageQueue = [];
 
 
@@ -175,7 +175,7 @@ const value = signal();
 if (probe) console.debug("ui.probe: ", name, value);
 if (isAudioParam(receiver[name])) {
 if (isAutomationEnabled()) {
-receiver[name].exponentialRampToValueAtTime(value, getAutomationInterval());
+receiver[name].linearRampToValueAtTime(value, getAutomationInterval());
 } else {
 receiver[name].value = value;
 } // if
