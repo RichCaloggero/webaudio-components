@@ -107,7 +107,8 @@ receiver = this.receiver
 const field = createField(receiver, name, dataType, defaultValue,
 `<button class="control" data-name="${name}">${label}</button>`
 ); // createField
-this.createSignal(name, field, jSig.clickSignal);
+//this.createSignal(name, field, jSig.clickSignal);
+field.addEventListener("click", e => this.receiver[name] = true);
 return field;
 } // action
 

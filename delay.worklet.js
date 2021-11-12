@@ -27,8 +27,8 @@ minValue: -0.98,
 maxValue: 0.98,
 automationRate: "k-rate"
 }, {
-name: "reverse",
-defaultValue: 0.0,
+name: "enablePingPong",
+defaultValue: 0,
 minValue: 0,
 maxValue: 1,
 automationRate: "k-rate"
@@ -47,10 +47,11 @@ const samples = parameters.delay[0] * sampleRate;
 const delay = Math.floor(samples);
 const dx = samples - delay;
 
-const reverse = parameters.reverse[0] !== 0;
 const gain = parameters.gain[0];
 const feedback = parameters.feedback[0];
 const interpolationType = toInteger(parameters.interpolationType[0]);
+const enablePingPong = parameters.enablePingPong[0];
+
 this.interpolationEnabled = interpolationType !== 0;
 
 const inputBuffer = inputs[0];
@@ -72,32 +73,34 @@ this.delay = this.allocate(delay);
 
 //console.debug(`frame ${this.blockCount++}, delay ${delay}, ${this.delay}, ${delayLength}`);
 
-for (let channel = 0; channel < channelCount; channel++) {
-const sampleCount = inputBuffer[channel].length;
-let pingpong = 0;
-
+const sampleCount = inputBuffer[0].length;
+let swapChannels= false;
 for (let i=0; i<sampleCount; i++) {
-const sample = inputBuffer[channel][i];
-if (i % delay === 0) pingpong += 1;
+const inLeft = inputBuffer[0][i];
+const inRight = inputBuffer[1][i];
+if (i % delay === 0) swapChannels = !swapChannels;
 
 if (delay === 0) {
-writeOutputSample(channel, i, gain * sample);
+writeOutputSample(0, i, gain * inLeft);
+writeOutputSample(1, i, gain * inRight);
 
 } else {
-const delayedSample = this.getDelayedSample(channel, dx, sample);
-//console.debug(`read sample ${i}, length is ${this.bufferLength(channel)}`);
-this.writeBuffer(
-//reverse && isOdd(i)? oppositChannel(channel) : channel,
-channel,
-sample + feedback*delayedSample
-);
-//console.debug(`wrote sample ${i}, length ${this.bufferLength(channel)}`);
+const delayLeft = this.getDelayedSample(0, dx, inLeft);
+const delayRight = this.getDelayedSample(1, dx, inRight);
 
-writeOutputSample(isOdd(pingpong) && reverse? oppositChannel(channel) : channel, i, 0.5*gain*delayedSample);
+if (enablePingPong && swapChannels) {
+this.writeBuffer(0, inLeft + feedback*delayRight);
+this.writeBuffer(1, inRight + feedback*delayLeft);
+} else {
+this.writeBuffer(0, inLeft + feedback*delayLeft);
+this.writeBuffer(1, inRight + feedback*delayRight);
+} // if
+
+writeOutputSample(0, i, 0.5*gain*delayLeft);
+writeOutputSample(1, i, 0.5*gain*delayRight);
 } // if
 
 } // loop over samples
-} // loop over channels
 return true;
 
 function writeOutputSample (channel, i, value) {
@@ -227,5 +230,3 @@ function cubic (x, p) {
 
 function toInteger (x) {return x>0? Math.floor(x) : Math.ceil(x);}
 
-function isEven (n) {n%2 === 0;}
-function isOdd (n) {return !isEven(n);}

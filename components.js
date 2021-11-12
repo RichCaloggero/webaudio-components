@@ -61,18 +61,8 @@ set enableAutomation(value) {value? enableAutomation() : disableAutomation();},
 }; // component
 
 const ui = createUi (component, "root").ui;
-
-/*const ui = new Control(component, "App");
-createFields(
-component, ui,
-["saveOnExit", "storeAll", "restoreAll", "enableAutomation", "automationInterval", "automationType"]
-); // createFields
-component.ui = ui;
-*/
-
 ui.container.insertAdjacentHTML("afterBegin", '<div role="status" aria-atomic="true" aria-label="status" class="status"></div>\n');
 ui.container.classList.add("root");
-
 
 applyFieldInitializer(options, component);
 dom.buildDom(component);
@@ -122,6 +112,50 @@ if (!e.target.seeking) component.ui.nameToElement("position").value = Number(e.t
 
 return applyFieldInitializer(options, component);
 } // player
+
+export function oscillator (options) {
+const component = createUi(createOscillator());
+console.debug("oscillator: ", component);
+
+component.duration = 0;
+Object.defineProperties(component, {
+start: {enumerable: true,
+get: function () {return null;},
+set: function (value) {
+if (component.duration && component.duration >= 0) {
+console.debug("start oscillator: ", component.duration);
+setTimeout(() => component.audioNode.stop(), 1000 * component.duration);
+} // if
+component.audioNode.start();
+} // set
+}, // start
+
+stop: {enumerable: true,
+get: function () {return null;},
+set: function (value) {component.audioNode.stop();}
+}, // start
+}); // defineProperties
+
+createFields(component, component.ui, ["duration", "start", "stop"], "frequency");
+
+return applyFieldInitializer(options, component);
+
+
+function createOscillator () {
+const osc = audioContext.createOscillator();
+
+osc.onended = function () {
+if (component.audioNode) component.audioNode.disconnect();
+const osc = createOscillator();
+osc.connect(component.wet);
+component.audioNode = osc;
+component.frequency = osc.frequency;
+}; // onended
+
+
+return osc;
+} // createOscillator
+} // oscillator
 
 export function destination () {
 const component = new Destination(audioContext);

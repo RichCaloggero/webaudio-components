@@ -33,7 +33,6 @@ if (!component.input && !component.output) component._error("no connections poss
 // create getters and setters on component which talk to the webaudio node inside
 promoteParameters(component, node);
 return component;
-
 } // wrapAudioNode
 
 function buildUi (component, name = component.name) {
@@ -47,6 +46,7 @@ component, ui,
 [...AudioComponent.sharedParameterNames, ...filterIgnored(allParameterNames(component))]
 ) // createFields
 ); // new Set
+//console.debug("createFields: ", ui.allFieldNames);
 
 component.ui = ui;
 return component;

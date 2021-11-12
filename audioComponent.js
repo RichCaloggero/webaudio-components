@@ -226,19 +226,19 @@ super (audio, "delay");
 
 this._in = audio.createGain();
 this._out = audio.createGain();
-this.webaudioNode = audio.createDelay();
+this.audioNode = audio.createDelay();
 this._feedBack = audio.createGain();
 
-this.input.connect(this._in).connect(this.webaudioNode).connect(this._out).connect(this.wet);
+this.input.connect(this._in).connect(this.audioNode).connect(this._out).connect(this.wet);
 this._out.connect(this._feedBack).connect(this._in);
 } // constructor
 
-get delay () {return this.webaudioNode.delayTime.value;}
+get delay () {return this.audioNode.delayTime.value;}
 get feedBack() {return this._feedBack.gain.value;}
 
 set delay (value) {
 this.bypass = (Math.abs(value) < 0.00001);
-this.webaudioNode.delayTime.value = value;
+this.audioNode.delayTime.value = value;
 } // set delayTime
 
 set feedBack(value) {this._feedBack.gain.value = value;}
