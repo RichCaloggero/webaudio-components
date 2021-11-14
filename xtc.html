@@ -23,16 +23,17 @@ window.oscillator = audio.oscillator()
 window.panner = audio.panner("bypass=true; radius=5; angle = 0 | t/2; panningModel = equalpower; orientationX=0; distanceModel = linear; maxDistance = 30; refDistance = 20;"),
 audio.stereoProcessor("bypass=true"),
 
-window.s2 = audio.series("title = XTC; mix=0.3; show = bypass, mix",
-audio.filter(`
+window.s2 = audio.series("title = XTC; mix=1; show = bypass, mix",
+audio.filter(`bypass=true;
 type=highpass;
 frequency = 250 ;
 Q=1;
 hide = silentBypass, mix, detune, gain
 `),
 audio.delay(`
-delay = 0.00007 | s(t/2, 0.00005, 0.00015);
-feedback=0.75;
+delay = 0.7 | s(t/2, 0.00005, 0.00015);
+feedback=0;
+taps=20;
 gain=-1; enablePingPong=1;
 hide = silentBypass, mix
 `),

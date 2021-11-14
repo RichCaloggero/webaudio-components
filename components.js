@@ -118,15 +118,38 @@ const component = createUi(createOscillator());
 console.debug("oscillator: ", component);
 
 component.duration = 0;
+component._running = false;
+component._split = audioContext.createChannelSplitter(2);
+component._merge = audioContext.createChannelMerger(2);
+component._left = audioContext.createGain();
+component._right = audioContext.createGain();
+component._split.connect(component._left, 0,0).connect(component._merge, 0,0);
+component._split.connect(component._right, 1,0).connect(component._merge, 0,1);
+component._merge.connect(component.wet);
+
+component.audioNode.connect(component._split);
 Object.defineProperties(component, {
+leftChannel: {enumerable: true,
+get: function () {return component._left.gain.value === 1;},
+set: function (value) {component._left.gain.value = value? 1 : 0;}
+}, // leftChannel
+
+rightChannel: {enumerable: true,
+get: function () {return component._right.gain.value === 1;},
+set: function (value) {component._right.gain.value = value? 1 : 0;}
+}, // rightChannel
+
 start: {enumerable: true,
 get: function () {return null;},
 set: function (value) {
 if (component.duration && component.duration >= 0) {
 console.debug("start oscillator: ", component.duration);
-setTimeout(() => component.audioNode.stop(), 1000 * component.duration);
+this.wet.gain.value = 1;
+setTimeout(() => component.wet.gain.value = 0, 1000 * component.duration);
 } // if
+if (component._running) return;
 component.audioNode.start();
+component._running = true;
 } // set
 }, // start
 
@@ -136,7 +159,7 @@ set: function (value) {component.audioNode.stop();}
 }, // start
 }); // defineProperties
 
-createFields(component, component.ui, ["duration", "start", "stop"], "frequency");
+createFields(component, component.ui, ["leftChannel", "rightChannel", "duration", "start", "stop"], "frequency");
 
 return applyFieldInitializer(options, component);
 
@@ -147,11 +170,10 @@ const osc = audioContext.createOscillator();
 osc.onended = function () {
 if (component.audioNode) component.audioNode.disconnect();
 const osc = createOscillator();
-osc.connect(component.wet);
+osc.connect(component._split);
 component.audioNode = osc;
 component.frequency = osc.frequency;
 }; // onended
-
 
 return osc;
 } // createOscillator

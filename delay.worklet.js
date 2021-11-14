@@ -1,3 +1,34 @@
+class Buffer {
+constructor (length) {
+this.length =length;
+this.data = new Float32Array(this.length);
+this.index = 0;
+this.value = 0.0;
+this._tapCount = 1;
+} // constructor
+
+write (sample) {
+//console.debug("writing ", sample, this.index);
+this.data[this.index] = sample;
+this.index += 1;
+if (this.index >= this.length) this.index = 0;
+//console.debug("- index = ", this.index);
+} // write
+
+read (delay) {
+if (delay >= 0 && delay < this.length) {
+let i = this.index - delay;
+if (i < 0) i += this.length;
+this.value = this.data[Math.floor(i)];
+} // if
+
+return this.value;
+} // read
+
+readByTime (delay) {return this.read(delay * sampleRate);}
+} // class Buffer
+
+
 class Delay extends AudioWorkletProcessor {
 static interpolationTypes = ["none", "linear", "cubic"];
 
@@ -6,7 +37,25 @@ return [{
 name: "delay",
 defaultValue: 0.0,
 minValue: 0.0,
-maxValue: sampleRate, // 1 second
+maxValue: 1.0, // 1 second
+automationRate: "k-rate"
+}, {
+name: "feedback",
+defaultValue: 0.0,
+minValue: -0.98,
+maxValue: 0.98,
+automationRate: "k-rate"
+}, {
+name: "taps",
+defaultValue: 1,
+minValue: 1,
+maxValue: 20,
+automationRate: "k-rate"
+}, {
+name: "enablePingPong",
+defaultValue: 0,
+minValue: 0,
+maxValue: 1,
 automationRate: "k-rate"
 }, {
 name: "gain",
@@ -20,174 +69,81 @@ defaultValue: 0.0,
 minValue: 0,
 maxValue: 2,
 automationRate: "k-rate"
-}, {
-name: "feedback",
-defaultValue: 0.0,
-minValue: -0.98,
-maxValue: 0.98,
-automationRate: "k-rate"
-}, {
-name: "enablePingPong",
-defaultValue: 0,
-minValue: 0,
-maxValue: 1,
-automationRate: "k-rate"
 }];
 } // get parameterDescriptors
 
 constructor (options) {
 super (options);
-this.initializeDelayBuffer();
+this.allocate(sampleRate);
+this.delay = -1;
 this.blockCount = 0;
+this.sampleCount = 0;
 console.debug(`delay.worklet ready.`);
 } // constructor
 
 process (inputs, outputs, parameters) {
-const samples = parameters.delay[0] * sampleRate;
-const delay = Math.floor(samples);
-const dx = samples - delay;
+const delayTime = parameters.delay[0];
+const delay = Math.floor(delayTime * sampleRate);
+const tapCount = parameters.taps[0];
 
 const gain = parameters.gain[0];
 const feedback = parameters.feedback[0];
-const interpolationType = toInteger(parameters.interpolationType[0]);
 const enablePingPong = parameters.enablePingPong[0];
-
-this.interpolationEnabled = interpolationType !== 0;
 
 const inputBuffer = inputs[0];
 const outputBuffer = outputs[0];
 const channelCount = inputBuffer.length;
-
 if (channelCount !== 2) return true;
 
 this.blockCount += 1;
-if (delay === 0 && this.delayBuffer[0] !== null) {
-this.initializeDelayBuffer();
-//console.debug("deallocated buffers");
-
-} else if (delay > 0 && delay !== this.delay) {
-//console.debug(`dx: ${dx}`);
-this.delay = this.allocate(delay);
-//console.debug(`allocated ${this.delay}, lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
+if (delay * tapCount > this.delayLeft.length) {
+this.allocate(tapCount * delay + 1);
 } // if
 
-//console.debug(`frame ${this.blockCount++}, delay ${delay}, ${this.delay}, ${delayLength}`);
-
-const sampleCount = inputBuffer[0].length;
-let swapChannels= false;
-for (let i=0; i<sampleCount; i++) {
+let swapChannels= true;
+for (let i=0; i<inputBuffer[0].length; i++) {
 const inLeft = inputBuffer[0][i];
 const inRight = inputBuffer[1][i];
-if (i % delay === 0) swapChannels = !swapChannels;
+this.sampleCount += 1;
+//console.debug("- input: ", inLeft, inRight, swapChannels);
 
-if (delay === 0) {
-writeOutputSample(0, i, gain * inLeft);
-writeOutputSample(1, i, gain * inRight);
+let delayLeft = 0, delayRight = 0;
+let _gain = 2/tapCount;
+for (let j=1; j<=tapCount; j++) {
+if (j%2 === 0) swapChannels = !swapChannels;
+const dl = this.delayLeft.read(j * delay);
+const dr = this.delayRight.read(j * delay);
 
+if (swapChannels) {
+delayLeft += _gain *dr;
+delayRight += _gain * dl;
 } else {
-const delayLeft = this.getDelayedSample(0, dx, inLeft);
-const delayRight = this.getDelayedSample(1, dx, inRight);
-
-if (enablePingPong && swapChannels) {
-this.writeBuffer(0, inLeft + feedback*delayRight);
-this.writeBuffer(1, inRight + feedback*delayLeft);
-} else {
-this.writeBuffer(0, inLeft + feedback*delayLeft);
-this.writeBuffer(1, inRight + feedback*delayRight);
+delayLeft += _gain * dl ;
+delayRight += _gain * dr;
 } // if
+} // loop over tapCount
+//console.debug("- delayed: ", delayLeft, delayRight);
 
-writeOutputSample(0, i, 0.5*gain*delayLeft);
-writeOutputSample(1, i, 0.5*gain*delayRight);
+this.delayLeft.write(inLeft + feedback*delayLeft);
+this.delayRight.write(inRight + feedback*delayRight);
+
+outputBuffer[0][i] = 0.5*gain*delayLeft;
+outputBuffer[1][i] = 0.5*gain*delayRight;
+
+/*if (sampleCount > 10) {
+console.debug("- stop at ", sampleCount, "; buffers: ", this.delayLeft, this.delayRight);
+throw new Error("stop.");
 } // if
-
+*/
 } // loop over samples
+
 return true;
-
-function writeOutputSample (channel, i, value) {
-outputBuffer[channel][i] = value;
-} // writeOutputSample
-
-function chan (n) {return reverse? oppositChannel(n) : n;}
 } // process
 
-initializeDelayBuffer () {
-this.delayBuffer = [null, null];
-this.readIndex = [0, 0];
-this.writeIndex = [0, 0];
-this._bufferLength = [0,0];
-this.delay = 0;
-} // initializeDelayBuffer
-
-readBuffer (channel) {
-// returns 0 until delay line is full, or if delay time is set to 0
-if (this.delay === 0 || this.isFull(channel)) return 0.0;
-
-const sample = this.delayBuffer[channel][this.readIndex[channel]];
-//console.debug(`- - got ${sample} at ${this.readIndex[channel]}`);
-this.readIndex[channel] = (this.readIndex[channel] + 1) % this.delay;
-this._bufferLength[channel] -= 1;
-return sample;
-} // readBuffer
-
-writeBuffer (channel, sample) {
-if (this.delay === 0) return;
-if (this.isFull(channel)) throw new Error(`
-buffer overrun in delay.worklet:
-${channel}, ${this.bufferLength(channel)}, ${this.readIndex}, ${this.writeIndex}
-`);
-
-this.delayBuffer[channel][this.writeIndex[channel]] = sample;
-//console.debug(`- wrote ${sample} at ${this.writeIndex[channel]}`);
-this.writeIndex[channel] = (this.writeIndex[channel] + 1) % this.delay;
-this._bufferLength[channel] += 1;
-} // writeBuffer
-
-copyBuffer (from, index, to, count) {
-for (let i = 0; i < count; i++) {
-to[i] = from[index];
-index = (index+1) % this.delay;
-} // for
-
-return to;
-} // copyBuffer
-
-
-
-allocate (count) {
-//console.debug(`allocating ${count}, bufferLengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
-for (let channel=0; channel<2; channel++) {
-const buffer = new Float32Array(count);
-
-if (this.delayBuffer[channel] !== null) {
-// copy from old buffer
-const length = Math.min(count, this.bufferLength(channel));
-//console.debug(`- copying ${length} for channel ${channel}, bufferLength is ${this.bufferLength(channel)}`);
-
-for (let i=0; i<length; i++) buffer[channel][i] = this.readBuffer(channel);
-
-this.readIndex[channel] = 0;
-this.writeIndex[channel] = length;
-this._bufferLength[channel] = length;
-//console.debug(`- copy done, bufferLength is ${this.bufferLength(channel)}`);
-
-} else {
-this.readIndex[channel] = this.writeIndex[channel] = 0;
-this._bufferLength[channel] = 0;
-//console.debug("- no copy...");
-} // if
-
-this.delayBuffer[channel] = buffer;
-} // loop over channels
-
-//console.debug(`allocation complete; lengths are ${this.bufferLength(0)} and ${this.bufferLength(1)}`);
-return count;
+allocate (length) {
+this.delayLeft = new Buffer(length);
+this.delayRight = new Buffer(length);
 } // allocate
-
-bufferLength (channel) {
-return this._bufferLength[channel];
-} // bufferLength
-
-isFull (channel) {return this.bufferLength(channel) > 0 && this.readIndex[channel] === this.writeIndex[channel];}
 
 getDelayedSample (channel, dx, sample) {
 if (this.delay === 0) return 0;
