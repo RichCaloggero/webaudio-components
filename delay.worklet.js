@@ -60,8 +60,8 @@ automationRate: "k-rate"
 }, {
 name: "gain",
 defaultValue: 1.0,
-minValue: -1.0,
-maxValue: 1.0,
+minValue: 0.0,
+maxValue: 2.0,
 automationRate: "k-rate"
 }, {
 name: "interpolationType",
@@ -109,17 +109,17 @@ this.sampleCount += 1;
 
 let delayLeft = 0, delayRight = 0;
 let _gain = 2/tapCount;
-for (let j=1; j<=tapCount; j++) {
-if (j%2 === 0) swapChannels = !swapChannels;
-const dl = this.delayLeft.read(j * delay);
-const dr = this.delayRight.read(j * delay);
+for (let j=0; j<tapCount; j++) {
+const gain = 1 / Math.pow(2, j);
+const dl = this.delayLeft.read(j+1 * delay);
+const dr = this.delayRight.read(j+1 * delay);
 
-if (swapChannels) {
-delayLeft += _gain *dr;
-delayRight += _gain * dl;
+if (j%2 === 0) {
+delayLeft += -1 * gain *dr;
+delayRight += -1 * gain * dl;
 } else {
-delayLeft += _gain * dl ;
-delayRight += _gain * dr;
+delayLeft += gain * dl ;
+delayRight += gain * dr;
 } // if
 } // loop over tapCount
 //console.debug("- delayed: ", delayLeft, delayRight);

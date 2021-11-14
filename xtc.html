@@ -16,25 +16,25 @@ const commonOptions = "bypass, silentBypass, mix";
 window.app = audio.app("enableAutomation; automationInterval=0.1",
 audio.series(
 audio.parallel(
-window.player = audio.player("media = media/Grateful Dead Oakland Arena, Oakland, CA 12_31_88 Complete Show-4EVP2JnaCpc.opus; position=200"),
+window.player = audio.player("media = media/gd81-12-31d4t01.flac"),
 window.oscillator = audio.oscillator()
 ), // parallel
 
 window.panner = audio.panner("bypass=true; radius=5; angle = 0 | t/2; panningModel = equalpower; orientationX=0; distanceModel = linear; maxDistance = 30; refDistance = 20;"),
 audio.stereoProcessor("bypass=true"),
 
-window.s2 = audio.series("title = XTC; mix=1; show = bypass, mix",
+window.s2 = audio.series("title = XTC; mix=0.4; show = bypass, mix",
 audio.filter(`bypass=true;
-type=highpass;
-frequency = 250 ;
-Q=1;
+type=bandpass;
+frequency = 500;
+Q=0.3;
 hide = silentBypass, mix, detune, gain
 `),
 audio.delay(`
-delay = 0.7 | s(t/2, 0.00005, 0.00015);
+delay = 0.00007 | s(t/2, 0.00005, 0.00015);
 feedback=0;
-taps=20;
-gain=-1; enablePingPong=1;
+taps=7;
+gain=1.5;
 hide = silentBypass, mix
 `),
 ), // series
