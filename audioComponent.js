@@ -18,12 +18,10 @@ angle: {step: .02},
 coneInnerAngle: {min: 0, max: 360, step: 1},
 coneOuterAngle: {min: 0, max: 360, step: 1},
 mix: {defaultValue: 1, min: -1, max: 1, step: 0.01},
-channelCount: {min: 1, max: 2},
+channelCount: {min: 1, max: 2, step: 1},
 rolloffFactor: {min: 0, step: 0.1},
 gain: {step: 0.02},
-feedBack: {defaultValue: 0, min: -0.95, max: 0.95, step: 0.01},
-delay: {defaultValue: 0, min: 0, max: 1, step: 0.000001},
-
+delay: {step: 0.00001}
 }; // constraints
 
 constructor (audio, name, parent = null) {

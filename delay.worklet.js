@@ -1,14 +1,12 @@
 class Buffer {
 constructor (length) {
 this.length =length;
-this.data = new Float32Array(this.length);
+this.data = new Float32Array(length);
 this.index = 0;
 this.value = 0.0;
-this._tapCount = 1;
 } // constructor
 
 write (sample) {
-//console.debug("writing ", sample, this.index);
 this.data[this.index] = sample;
 this.index += 1;
 if (this.index >= this.length) this.index = 0;
@@ -17,10 +15,10 @@ if (this.index >= this.length) this.index = 0;
 
 read (delay) {
 if (delay >= 0 && delay < this.length) {
-let i = this.index - delay;
-if (i < 0) i += this.length;
-this.value = this.data[Math.floor(i)];
-} // if
+        let index = this.index - delay;
+if (index < 0) index += this.length;
+        this.value = this.data[Math.floor(this.index)];
+    } // if
 
 return this.value;
 } // read
@@ -35,21 +33,27 @@ static interpolationTypes = ["none", "linear", "cubic"];
 static get parameterDescriptors() {
 return [{
 name: "delay",
-defaultValue: 0.0,
+defaultValue: 0.5,
 minValue: 0.0,
 maxValue: 1.0, // 1 second
-automationRate: "k-rate"
-}, {
-name: "feedback",
-defaultValue: 0.0,
-minValue: -0.98,
-maxValue: 0.98,
 automationRate: "k-rate"
 }, {
 name: "taps",
 defaultValue: 1,
 minValue: 1,
 maxValue: 20,
+automationRate: "k-rate"
+}, {
+name: "decay",
+defaultValue: 2.0,
+minValue: 1.0,
+maxValue: 3.0,
+automationRate: "k-rate"
+}, {
+name: "feedback",
+defaultValue: 0.0,
+minValue: -0.98,
+maxValue: 0.98,
 automationRate: "k-rate"
 }, {
 name: "enablePingPong",
@@ -74,10 +78,12 @@ automationRate: "k-rate"
 
 constructor (options) {
 super (options);
-this.allocate(sampleRate);
-this.delay = -1;
+this.bufferLength = 0;
+this.delayLeft = this.delayRight = null;
+this.tapCount = 0;
 this.blockCount = 0;
 this.sampleCount = 0;
+this.delay = 0;
 console.debug(`delay.worklet ready.`);
 } // constructor
 
@@ -85,47 +91,54 @@ process (inputs, outputs, parameters) {
 const delayTime = parameters.delay[0];
 const delay = Math.floor(delayTime * sampleRate);
 const tapCount = parameters.taps[0];
-
 const gain = parameters.gain[0];
 const feedback = parameters.feedback[0];
+const decay = parameters.decay[0];
 const enablePingPong = parameters.enablePingPong[0];
-
 const inputBuffer = inputs[0];
 const outputBuffer = outputs[0];
 const channelCount = inputBuffer.length;
+
 if (channelCount !== 2) return true;
+if (this.blockCount === 0 && inputBuffer[0].every(x => x === 0)) return false;
 
 this.blockCount += 1;
-if (delay * tapCount > this.delayLeft.length) {
-this.allocate(tapCount * delay + 1);
+if (delay !== this.delay || tapCount !== this.tapCount) {
+this.bufferLength = this.allocate(delay *  tapCount);
+this.delay = delay;
+this.tapCount = tapCount;
+console.debug("- allocate: ", this.bufferLength, this.delay, this.tapCount, this.blockCount, this.sampleCount);
 } // if
 
-let swapChannels= true;
 for (let i=0; i<inputBuffer[0].length; i++) {
 const inLeft = inputBuffer[0][i];
 const inRight = inputBuffer[1][i];
 this.sampleCount += 1;
-//console.debug("- input: ", inLeft, inRight, swapChannels);
+//console.debug("- input: ", this.sampleCount, inLeft, inRight);
 
 let delayLeft = 0, delayRight = 0;
-let _gain = 2/tapCount;
-for (let j=0; j<tapCount; j++) {
-const gain = 1 / Math.pow(2, j);
-const dl = this.delayLeft.read(j+1 * delay);
-const dr = this.delayRight.read(j+1 * delay);
+for (let j=1; j <= tapCount; j++) {
+const gain = 1 / Math.pow(decay, j);
+const index = this.bufferLength - ((tapCount - j) * delay);
+//console.debug("-: tap ", j, index, gain);
+ 
+// read with no interpolation
+const dl = this.delayLeft.read(index);
+const dr = this.delayRight.read(index);
 
-if (j%2 === 0) {
-delayLeft += -1 * gain *dr;
+if (j%2 === 1) {
+//console.debug("- swap");
+delayLeft += -1 * gain * dr;
 delayRight += -1 * gain * dl;
 } else {
-delayLeft += gain * dl ;
+delayLeft += gain * dl;
 delayRight += gain * dr;
 } // if
-} // loop over tapCount
-//console.debug("- delayed: ", delayLeft, delayRight);
+} // for j
+//throw new Error("stop.");
 
-this.delayLeft.write(inLeft + feedback*delayLeft);
-this.delayRight.write(inRight + feedback*delayRight);
+this.delayLeft.write(inLeft + feedback * delayLeft);
+this.delayRight.write(inRight + feedback * delayRight);
 
 outputBuffer[0][i] = 0.5*gain*delayLeft;
 outputBuffer[1][i] = 0.5*gain*delayRight;
@@ -141,8 +154,10 @@ return true;
 } // process
 
 allocate (length) {
+this.delayLeft = this.delayRight = null;
 this.delayLeft = new Buffer(length);
 this.delayRight = new Buffer(length);
+return length;
 } // allocate
 
 getDelayedSample (channel, dx, sample) {

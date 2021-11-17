@@ -16,14 +16,14 @@ const commonOptions = "bypass, silentBypass, mix";
 window.app = audio.app("enableAutomation; automationInterval=0.1",
 audio.series(
 audio.parallel(
-window.player = audio.player("media = media/gd81-12-31d4t01.flac"),
+window.player = audio.player("media = media/gd81-12-31d3t01.flac"),
 window.oscillator = audio.oscillator()
 ), // parallel
 
 window.panner = audio.panner("bypass=true; radius=5; angle = 0 | t/2; panningModel = equalpower; orientationX=0; distanceModel = linear; maxDistance = 30; refDistance = 20;"),
 audio.stereoProcessor("bypass=true"),
 
-window.s2 = audio.series("title = XTC; mix=0.4; show = bypass, mix",
+window.s2 = audio.series("title = XTC; mix=0.5; show = bypass, mix",
 audio.filter(`bypass=true;
 type=bandpass;
 frequency = 500;
