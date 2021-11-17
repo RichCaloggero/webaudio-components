@@ -23,11 +23,12 @@ window.oscillator = audio.oscillator()
 window.panner = audio.panner("bypass=true; radius=5; angle = 0 | t/2; panningModel = equalpower; orientationX=0; distanceModel = linear; maxDistance = 30; refDistance = 20;"),
 audio.stereoProcessor("bypass=true"),
 
-window.s2 = audio.series("title = XTC; mix=0.5; show = bypass, mix",
-audio.filter(`bypass=true;
-type=bandpass;
-frequency = 500;
-Q=0.3;
+audio.series("title = XTC; mix=0.5; show = bypass, mix",
+audio.series(
+audio.filter(`
+type=highpass;
+frequency = 140;
+Q=0.1;
 hide = silentBypass, mix, detune, gain
 `),
 audio.delay(`
@@ -37,6 +38,8 @@ taps=7;
 gain=1.5;
 hide = silentBypass, mix
 `),
+), // series
+audio.gain("gain=3.0"),
 ), // series
 
 audio.destination()

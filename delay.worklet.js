@@ -107,7 +107,7 @@ if (delay !== this.delay || tapCount !== this.tapCount) {
 this.bufferLength = this.allocate(delay *  tapCount);
 this.delay = delay;
 this.tapCount = tapCount;
-console.debug("- allocate: ", this.bufferLength, this.delay, this.tapCount, this.blockCount, this.sampleCount);
+//console.debug("- allocate: ", this.bufferLength, this.delay, this.tapCount, this.blockCount, this.sampleCount);
 } // if
 
 for (let i=0; i<inputBuffer[0].length; i++) {
