@@ -72,7 +72,7 @@ receiver = this.receiver
 const field = createField(receiver, name, dataType, defaultValue,
 `<label>
 <span class="text">${label}</span>
-<input class="control" type="text" value="${defaultValue}" data-name="${name}">
+<input class="control" type="text" value="${defaultValue}" data-name="${name}" accesskey="${name.charAt(0)}">
 </label>
 `);
 this.createSignal(name, field, defaultValue);
@@ -105,10 +105,13 @@ defaultValue = null,
 receiver = this.receiver
 }) {
 const field = createField(receiver, name, dataType, defaultValue,
-`<button class="control" data-name="${name}">${label}</button>`
-); // createField
-//this.createSignal(name, field, jSig.clickSignal);
+`<button class="control" data-name="${name}" accesskey="${name.charAt(0)}">
+ ${label}
+</button>
+`); // createField
+// signals don't work so well here because of they way I've implemented clickSignal(), so we add a dedicated handler instead
 field.addEventListener("click", e => this.receiver[name] = true);
+//this.createSignal(name, field, jSig.clickSignal);
 return field;
 } // action
 
@@ -121,7 +124,9 @@ receiver = this.receiver
 }) {
 const field = createField(
 receiver, name, dataType, defaultValue,
-`<button class="control" data-name="${name}" aria-pressed="${defaultValue? "true" : "false"}">${label}</button>`
+`<button class="control" data-name="${name}" aria-pressed="${defaultValue? "true" : "false"}" accesskey="${name.charAt(0)}">
+${label}
+</button>`
 );
 field.dataset.value = (defaultValue);
 this.createSignal(name, field, defaultValue);
@@ -149,6 +154,7 @@ const field = createField(receiver, name, dataType, defaultValue,
 type="${controlType}"
 data-name="${name}"
 value="${dataType(defaultValue)}"
+accesskey="${name.charAt(0)}"
 min="${min}" max="${max}" step="${step}">
 </label>
 `);

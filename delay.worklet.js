@@ -57,7 +57,7 @@ maxValue: 0.98,
 automationRate: "k-rate"
 }, {
 name: "enablePingPong",
-defaultValue: 0,
+defaultValue: 1,
 minValue: 0,
 maxValue: 1,
 automationRate: "k-rate"
@@ -90,11 +90,11 @@ console.debug(`delay.worklet ready.`);
 process (inputs, outputs, parameters) {
 const delayTime = parameters.delay[0];
 const delay = Math.floor(delayTime * sampleRate);
-const tapCount = parameters.taps[0];
+const tapCount = Math.floor(parameters.taps[0]);
 const gain = parameters.gain[0];
 const feedback = parameters.feedback[0];
 const decay = parameters.decay[0];
-const enablePingPong = parameters.enablePingPong[0];
+const enablePingPong = parameters.enablePingPong[0] !== 0;
 const inputBuffer = inputs[0];
 const outputBuffer = outputs[0];
 const channelCount = inputBuffer.length;
@@ -126,7 +126,7 @@ const index = this.bufferLength - ((tapCount - j) * delay);
 const dl = this.delayLeft.read(index);
 const dr = this.delayRight.read(index);
 
-if (j%2 === 1) {
+if (enablePingPong && j%2 === 1) {
 //console.debug("- swap");
 delayLeft += -1 * gain * dr;
 delayRight += -1 * gain * dl;
